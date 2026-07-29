@@ -1329,6 +1329,81 @@ Acceptance requires byte-for-byte agreement between the TypeScript port and the 
 
 **DBI-003 status (2026-07-29): classifier contract complete; task remains open.** The static code distinguishes TCVN3 from decomposed Unicode and supports more encodings than the earlier three-way label implied. The actual classes and counts remain unknown until DBI-002 runs on the parish copy; no encoding distribution is inferred from the seed.
 
+### 9.3 Partial-date profiler contract (DBI-004 preparation)
+
+The embedded seed has 34 text fields whose names express dates: 30 `VARCHAR(10)` and four `VARCHAR(255)`. It also has 11 native Access timestamp fields. Profile the timestamp fields for validity and range under DBI-002, but do not treat them as partial dates. `LopGiaoLy.Nam` is a catechism-year integer and requires a separate domain mapping; its name alone does not make it a calendar date.
+
+| Area | Text date fields in the seed |
+|---|---|
+| Association membership | `ChiTietHoiDoan.NgayVaoHoiDoan`, `ChiTietHoiDoan.NgayRaHoiDoan` |
+| Transfer and sacrament batch | `ChuyenXu.NgayChuyen`, `DotBiTich.NgayBiTich` |
+| Person | `GiaoDan.NgaySinh`, `NgayRuaToi`, `NgayRuocLe`, `NgayThemSuc`, `NgayQuaDoi`, `NgayXucDau`, `NgayBD1`, `NgayBD2`, `NgayTHVaoDoi`, `NgayGLHN1`, `NgayGLHN2` |
+| Association | `HoiDoan.NgayBonMang`, `HoiDoan.NgayThanhLap` |
+| Marriage and banns | `HonPhoi.NgayHonPhoi`; `RaoHonPhoi.NgayRaoLan1`, `NgayRaoLan2`, `NgayRaoLan3` |
+| Clergy | `LinhMuc.NgaySinh`, `LinhMuc.TuNgay`, `LinhMuc.DenNgay` |
+| Vocation | `TanHien.NgayBatDau`, `NgayVaoDCV`, `NgayVaoNhaThu`, `NgayVaoNhaTap`, `NgayVaoKhanLanDau`, `NgayVaoKhanTronDoi`, `NgayPhoTe`, `NgayThuPhongLM`, `NgayBonMang` |
+| Household | `GiaDinh.NgayChuyen` |
+
+DBI-001 must replace this list with the live schema manifest before profiling. Include newly discovered date-like text fields only after source/query use or domain review confirms their meaning; do not classify every field containing `Nam` or a digit as a date.
+
+The legacy helpers establish a provisional compatibility grammar rather than a safe import grammar:
+
+- `GetDatePart` recognizes one component as `yyyy`, two as `MM/yyyy`, and three as `dd/MM/yyyy`, splitting on `/`, `-`, or `.`.
+- `GetIntOfDateFrom` compares missing day/month as `00`; `GetIntOfDateTo` compares them as `31`/`12`. These are lexicographic search bounds, not stored calendar dates.
+- `GetDateFromString` independently scans separators and substitutes boundary components, while `ReplaceDate` trims, deletes apostrophes, collapses `//`, truncates at the first space, and validates with `DateTime`.
+- `FormatDateString` returns any ten-character value unchanged. The helpers can therefore disagree on mixed separators, empty components, suffix text, and malformed ten-character values.
+
+The new profiler never calls a platform date parser and never applies those destructive normalizations. It preserves the exact source string, then performs an ordinal, culture-independent parse with ASCII digits and the three evidenced separators. Each non-null value receives exactly one class:
+
+| Class | Meaning | Import disposition |
+|---|---|---|
+| `empty` | Zero-length string | Import as no date; retain raw value |
+| `whitespace_only` | Contains only whitespace | Import as no date; flag source cleanup count |
+| `year` | Exactly one valid four-digit Gregorian year component | Import with `precision = year` |
+| `month` | Valid month and four-digit year | Import with `precision = month` |
+| `day` | Valid Gregorian day, month, and four-digit year | Import with `precision = day` |
+| `valid_noncanonical` | Calendar-valid shape with evidenced legacy variation such as one-digit day/month, surrounding whitespace, or `-`/`.` separator | Normalize only after the variation is explicitly approved; retain raw |
+| `ambiguous` | Meaning changes between legacy helpers, year width is not four digits, separators are mixed, components are empty/extra, or more than one interpretation is credible | Do not load a normalized date; restricted review |
+| `invalid_calendar` | Numeric components form an impossible Gregorian date or a year outside `0001`–`9999` | Do not load a normalized date; discrepancy |
+| `invalid_format` | Non-numeric content, sign, exponent, unsupported Unicode digit, time suffix, or unsupported component count | Do not load a normalized date; discrepancy |
+| `encoding_blocked` | DBI-003 has not produced an approved Unicode value | Defer date classification; do not guess through mojibake |
+
+Null is retained as the DBI-002 `null` category and is not duplicated in the date-class denominator. A value with a replacement character or forbidden control remains a DBI-003 `invalid` finding and is counted here as `encoding_blocked`. The per-field arithmetic is:
+
+```text
+non_null =
+  empty + whitespace_only + year + month + day + valid_noncanonical +
+  ambiguous + invalid_calendar + invalid_format + encoding_blocked
+```
+
+For every parseable value, private output records only its opaque HMAC row reference, raw digest, parsed components, separator class, precision class, legacy-helper compatibility flags, normalized digest, and reviewer disposition. Sanitized output contains field-level counts only. Actual invalid/ambiguous strings are shown one at a time in the restricted review view; the review packet and git contain only invented examples. This tightens DBI-004's backlog evidence: “examples” means synthetic fixtures plus opaque references to restricted real rows, never copied parish data.
+
+Range and chronology rules operate on intervals without inventing precision:
+
+- `yyyy` spans 1 January through 31 December of that year.
+- `MM/yyyy` spans the first through the actual last Gregorian day of that month.
+- `dd/MM/yyyy` has identical lower and upper bounds.
+- A filter includes a partial date according to an explicitly named relation (`overlaps`, `contained_by`, `starts_within`, or exact precision match); no caller receives an implicit day-1 substitution.
+- Before changing legacy results, compare each report/statistic query against the legacy `YYYYMMDD` lower/upper strings using synthetic valid and invalid boundary fixtures.
+- Chronology findings use interval logic: `definitely_before`, `definitely_after`, `overlaps_or_unknown`, or `insufficient_precision`. Only definite contradictions are errors; overlap is not silently ordered.
+
+At minimum compute aggregate chronology findings for birth before death; birth before each sacrament, marriage, transfer, association, and vocation milestone; sacrament order; bann sequence before marriage; association exit not definitely before join; clergy end not definitely before start; and vocation milestones in their domain-approved order. Future dates and implausible ages are separate policy findings whose thresholds require domain approval, not parser failures.
+
+The synthetic corpus covers:
+
+- null, empty, spaces, tabs/newlines, and leading/trailing whitespace;
+- `yyyy`, `M/yyyy`, `MM/yyyy`, `d/M/yyyy`, and `dd/MM/yyyy` with `/`, `-`, and `.`;
+- leap day in a leap year, 29 February in a non-leap year, century leap rules, month/day zero, month 13, day 32, and years `0000`, `0001`, and `9999`;
+- one-, two-, and three-digit years; signed values; full-width and other Unicode digits; apostrophes; time suffixes; embedded spaces; repeated, empty, mixed, and extra separators;
+- values such as `//1980` and `01//1980` that expose disagreement among the legacy helpers;
+- year/month/day boundaries for every filter relation, including February and leap years;
+- definite and overlapping chronology pairs, future dates, implausible age ranges, and an invalid date that must never enter chronology comparison;
+- deterministic output, both Access adapters, no-log/no-summary leaks, and raw-string preservation.
+
+Acceptance requires all live schema date fields to be classified, all arithmetic to reconcile, both adapters to agree, every `ambiguous`, `invalid_calendar`, `invalid_format`, and `encoding_blocked` row to have an opaque finding and disposition, and zero unresolved invalid/ambiguous values in people, households, sacraments, marriages, transfers, clergy, associations, vocations, or report inputs. The domain expert separately approves future-date, age-range, and chronology policies.
+
+**DBI-004 status (2026-07-29): profiler contract complete; task remains open.** Static evidence fixes the accepted component order and documents the legacy helper divergence. Actual formats, precision counts, invalid values, and chronology findings remain unknown until DBI-002 and DBI-003 run against the restricted parish copy.
+
 Cutover: freeze desktop writes, run `extract`/`load`/`verify`, smoke test, open the web app, keep the desktop application and final `.mdb` read-only for 90 days.
 
 ## 10. Roadmap
@@ -1387,7 +1462,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | [ ] DBI-001 | S | SEC-001 | Finalize the §2.11 embedded-seed schema hypothesis against a restricted pilot copy | Live table/query, field, key, index, relationship, and type inventory reconciles with §2.3 without reading rows |
 | [ ] DBI-002 | M | DBI-001 | Implement and run the aggregate profiler contract in §9.1 against the restricted parish copy | Every live field reconciles in private JSON; sanitized JSON/Markdown pass disclosure review |
 | [ ] DBI-003 | M | DBI-002 | Implement and run the per-value encoding classifier in §9.2 | Field/class counts reconcile; restricted ambiguous set is dispositioned; critical fields have zero unresolved findings |
-| [ ] DBI-004 | M | DBI-002 | Classify every date-like field and observed precision | Invalid and ambiguous values counted with examples |
+| [ ] DBI-004 | M | DBI-002, DBI-003 | Implement and run the partial-date profiler contract in §9.3 | All live date fields and counts reconcile; invalid/ambiguous rows have opaque references and reviewed dispositions |
 | [ ] DBI-005 | S | DBI-002 | Audit `AnhDaiDien` paths against the install directory | Missing-file count known before import |
 | [x] BUG-001 | M | LEG-001 | Translate all 116 `VersionConfig.xml` changelog entries into an English/Vietnamese rule register at `docs/architecture/recorded-rules.md`, one row each: version, original text, rule implied, module, status | `CHG-001`–`CHG-116` reconcile to all 116 XML bullets; every row is classified rule / cosmetic-unspecified / obsolete implementation and behavioral rows remain pending BUG-003 |
 | [x] BUG-002 | M | BUG-001 | Mine 99 git commits for fixes not in the changelog; merge into the register | All commits through legacy release `360581d` have one ledger row; 26 history-only rule candidates were added and every other commit maps to recorded rules/aggregates or an explicit non-behavioral classification |
