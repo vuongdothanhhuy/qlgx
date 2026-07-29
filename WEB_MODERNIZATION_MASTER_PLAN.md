@@ -111,6 +111,47 @@ Call the day the complete restricted package is accepted **Data Day D0**. The pa
 
 If the package has no credible delivery date when the ten-day sprint ends, pause application work. Decide whether to keep pursuing the parish data, reduce the project to a repository-characterization exercise, or formally re-plan a new product that makes no migration/parity promise.
 
+### 0.5 Pre-data sprint closeout (2026-07-29)
+
+**Stop line reached; Gate 0 remains closed.** All eight repository-only preparation sequences in §0.4 now have reviewable evidence or an explicit provisional boundary. No application scaffold, importer implementation, target migration, synthetic “representative parish” data, or final report conversion is authorized next. Continuing without the inputs below would turn known unknowns into invented requirements.
+
+| Workstream | Repository-only readiness | Blocking input or approval | First action when unblocked |
+|---|---|---|---|
+| Security and intake | SEC-001–003 complete; ignore coverage, restricted handling, secret checks, and legacy-network retirement decisions recorded | Authorized custodian and complete package provenance/retention record | Accept the package at D0; verify checksums and isolation before inspection |
+| Legacy baseline and operations | LEG-001 and LEG-006 complete | None for their repository evidence; runtime behavior still belongs to the FLO sessions | Use as the source index for observation |
+| Domain inventories | LEG-002–005 static catalogs complete and provisional | Named domain expert, synthetic walkthrough records, live saved-query/schema evidence | Review preserve/change/retire questions; do not ask the expert to design the new UI |
+| Recorded rules | BUG-001–002 complete | Domain expert classification for BUG-003 | Review rule clusters as still required, changed, or obsolete before writing tests |
+| Runtime flows and shortcuts | FLO-001–004 static maps complete and provisional | Supported Windows/x86 legacy runtime plus operator walkthrough | Capture actual defaults, focus, validation, persistence, error paths, and return navigation |
+| Reports | 63 candidates cataloged; property audit and five-family prototype slate prepared | Pilot parish/diocese, deployed templates, authoritative Office render/print path, domain approval | Reconcile deployed hashes, select scope, then print representative fixtures |
+| Schema | DBI-001 seed hypothesis prepared | Restricted live `.mdb` | Extract schema only first; classify every difference before reading rows |
+| Aggregate/encoding/date/photo profiling | DBI-002–005 contracts, arithmetic, privacy rules, and synthetic edge cases prepared | Restricted live `.mdb` plus its exact install tree; DBI-003/004 also depend on approved prior-stage output | Implement and run in dependency order; publish only disclosure-reviewed aggregates |
+
+The project owner unblocks the next sequence by supplying or arranging:
+
+1. A read-only copy of the live `giaoxu.mdb` and the **entire matching installation directory**, including `Images/` and the deployed `Template/` tree. The database and files must come from the same installation and capture time.
+2. The deployed application version/build identity and the observed `TEMPLATE_FOLDER` and `REPORT_LANGUAGE` settings. Do not copy a password into a ticket, chat, filename, manifest, or commit.
+3. Authorization/provenance: parish owner, person who made the copy, capture time and source machine identity, approved restricted location, access list, retention date, and deletion owner.
+4. The pilot parish and diocese whose workflows and overrides define scope.
+5. A named daily operator/domain expert with at least four reserved hours per week.
+6. Access to the supported Windows/x86 legacy environment and an authoritative Office/print setup for observation with invented records.
+
+Do not attach that package to an issue or normal chat. Transfer it through the approved restricted channel. At D0, the operator computes and records checksums inside the restricted boundary; this plan records only the existence and review status of those checksums.
+
+Use the named expert's time in this order:
+
+| Session | Participants | Agenda | Required evidence |
+|---|---|---|---|
+| Intake and scope, 45–60 min | Project owner, custodian, operator | Confirm pilot parish/diocese, deployed version, active settings/templates, normal backup practice, roles, and high-frequency tasks | Signed intake/scope record; no credentials or production values in notes |
+| People and households, 2 h | Daily operator, analyst | Run FLO-001 with invented records; review related LEG-002 and BUG-003 clusters | Observed focus/default/validation/persistence paths and preserve/change/retire decisions |
+| Sacraments, marriage, banns, transfers, 2 h | Daily operator, domain expert | Run FLO-002; review partial-date meaning, saved-query purpose, batch generation, overrides, and related rules | Approved examples and unresolved decisions tied to card/rule ids |
+| Remaining modules and operations, 2 h | Daily operator, administrator | Run FLO-003–004; verify catechism, associations, vocation, statistics, imports, backup/restore, roles, and keyboard behavior | Formula/flow/permission decisions and observed failure paths |
+| Reports and printing, 2–3 h | Operator, report owner, printer user | Reconcile deployed templates; execute the RPI-003 five-family slate on actual printers with invented data | Scope decision, content/layout/physical-print matrix, tolerance decisions |
+| Profile findings, 2 h after D1–D2 | Domain expert, migration operator, security owner | Review opaque encoding/date/relation/photo findings one restricted value at a time | Every critical finding dispositioned; sanitized summary disclosure-approved |
+
+Every session ends with named decisions, unresolved questions, owner, and due date. Production values remain in the restricted review view and never enter meeting screenshots, recordings, ordinary notes, source control, or AI/tool consultations.
+
+**Resume rule:** once items 1–6 are scheduled or present, follow the D0–D5 handoff above. If they have no credible delivery date, the only valid next project decision is to pause, continue pursuing the evidence, or formally remove migration/parity promises and re-plan. “Start the web app anyway” is not a neutral option.
+
 ---
 
 ## 1. Decision and Estimate
