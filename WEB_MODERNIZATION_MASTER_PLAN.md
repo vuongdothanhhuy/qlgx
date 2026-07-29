@@ -310,6 +310,82 @@ The source also calls many other `SELECT_*` names without recreating them. There
 6. Run each saved query against the synthetic fixture database and capture field names, ordering, cardinality, null behavior, and expected rows. Reference those fixture/result ids from this section.
 7. Have the domain expert walk the twelve surfaces and seventeen rules above, resolve each question, and approve which behavior is still required. Only then mark LEG-004 complete and use its outputs for FLO-002 and MAR-001.
 
+### 2.10 Provisional organization, clergy, association, vocation, and catechism catalog
+
+**Status (2026-07-29): repository review packet complete; LEG-005 remains open.** The primary solution compiles the organization and association surfaces into `GiaoXu`/`GXControl` and the catechism surfaces into the separate `GiaoLy` assembly. Static source establishes possible behavior but not which workflows, values, exports, or destructive options the parish uses. Every module still needs an approved acceptance example.
+
+#### Compiled surfaces and responsibilities
+
+| Module / surface | Trigger and state | Output or cross-module effect | Source evidence | Required acceptance example or question |
+|---|---|---|---|---|
+| Parish identity and hierarchy | `frmGiaoXu` edits the single diocese, deanery, and parish chain plus parish contact, image, and rich-text notes | Feeds report headers, current-parish logic, bann letters, and legacy statistics | `Source/ChuongTrinh/frmGiaoXu.cs`: `frmGiaoXu_Load`, `btnUpdate_Click`, `AssignGXData` | One approved edit preserving all existing identifiers and report-header values; confirm whether one parish row is an invariant |
+| Parish-section list/editor | `frmGiaoHo` adds, edits, searches, and deletes `GiaoHo`, including optional parent-section hierarchy | Section membership drives person/household lists, reports, filters, and bulk moves | `Source/ChuongTrinh/frmGiaoHo.cs`: `checkInput`, `UpdateData`, `hasGiaDinh`, `gxAddEdit1_DeleteClick`; `Source/GXControl/GxGiaoHoList.cs` | Add a top-level and child section, reject duplicates, move a household, then attempt deletion of a populated section |
+| Clergy list/editor | `frmGiaoXu` owns the list; `frmLinhMuc` adds/edits identity, role, service dates, contact, and notes | Active clergy (`DenNgay IS NULL`) populate sacrament, marriage, bann, and report selectors | `Source/ChuongTrinh/frmGiaoXu.cs`: `EditLinhMucRow`; `Source/ChuongTrinh/frmLinhMuc.cs`: `checkInput`, `checkLinhMuc`, `btnOK_Click`; `Source/GXControl/GxLinhMucList.cs` | Add two clergy with similar names, end one assignment, and prove every downstream selector shows the approved set/order |
+| Association list | `frmHoiDoanList` opens, creates, edits, deletes, and reloads associations | Opens the membership editor and returns refreshed association rows | `Source/ChuongTrinh/frmHoiDoanList.cs`: `loaddata`, add/edit/delete handlers; `Source/GXControl/GxListHoiDoan.cs` | Create, rename, and retire an association while preserving historical memberships |
+| Association membership editor | `frmHoiDoan` maintains association name, patron saint/date, founding date, notes, members, join/exit dates, and roles | Writes `HoiDoan` and `ChiTietHoiDoan`; can add/select a person and export the member grid | `Source/GXControl/frmHoiDoan.cs`: `CheckInputData`, `UpdateHoiVien`, `insertDataGrid`, `ktHoiTruong`, delete handler | One current leader, ordinary members, a former member, re-entry, and leader succession with expected history |
+| Person association history | The association tab on `frmGiaoDan` loads and appends one person's membership history | Validates chronology against founding date and the person's latest exit before saving `ChiTietHoiDoan` | `Source/GXControl/GxHistoryHoiDoan.cs`: `loaddata`, `UpdateHoiDoan`; `Source/GXControl/GxListHistoryHoiDoan.cs` | Join, leave, rejoin, attempt overlapping membership, and save with unknown join date |
+| Person vocation/consecrated-life panel | The vocation tab on `frmGiaoDan` edits community, place, role, service contact, return status, and formation/ordination/memorial dates | Writes or deletes the person's single `TanHien` row; active rows block marriage entry | `Source/GXControl/GxTanHien.cs`: `GetData`, `AssignDataSource`, `UpdateData`, `checkInput`, `isNull` | Enter vocation history for unmarried and married people, mark returned, clear all fields, then test marriage eligibility |
+| Catechism grade/year list | `frmKhoiGiaoLyList` filters by year, creates/edits/deletes grades, and exports the grid | Entry point from `frmMain`; owns grade-level class navigation | `Source/ChuongTrinh/frmMain.cs`: `itGiaoLy`; `Source/Giaoly/frmKhoiGiaoLyList.cs` | Create the same grade name in two approved years and define expected year rollover behavior |
+| Catechism grade editor | `frmKhoiGiaoLy` edits grade name, manager, notes, year, and child classes | Deletes a class with its student links; exports its class list | `Source/Giaoly/frmKhoiGiaoLy.cs`: `checkInput`, `updateKhoiGiaoLy`, class add/edit/delete handlers | Create a grade and two classes, change manager, then attempt class deletion with enrolled students |
+| Catechism class editor | `frmLopGiaoLy` edits name, room, year, notes, students, teachers, completion flags, and catechism notes | Writes `LopGiaoLy`, `ChiTietLopGiaoLy`, and `GiaoLyVien`; exports student/teacher lists | `Source/Giaoly/frmLopGiaoLy.cs`: `addGiaoDan`, `addGiaoLyVien`, `checkInput`, `updateLopGiaoLy` | Add current and archived people, reject duplicate student/teacher, update completion/notes, and remove each link |
+| Catechism student grid and certificate | `GxHocSinh` displays class students, edits sequence/completion/notes, selects family context, and exposes a certificate command | Uses people and household data in class output; certificate implementation/usage needs runtime confirmation | `Source/Giaoly/GxHocSinh.cs`: `InChungNhan`, cell validators, `isValidGiaDinh`, `LoadData` | Print or export the exact document staff call a certificate, including a student with incomplete household information |
+| Catechism promotion/copy | `frmChuyenLop` selects students and a target year/grade/class, then assigns target sequences | Adds selected students to the target class if absent; static code does not delete source memberships | `Source/Giaoly/frmChuyenLop.cs`: `gxCommand1_OnOK` | Promote a mixed selection and decide whether history requires keeping, completing, or removing the source-class link |
+| Catechism spreadsheet import | From `frmLopGiaoLy`, choose a workbook and run `ImportData` for `Sheet1`, with progress and stop controls | Returns imported rows to the class workflow; interruption warning says partial data may be inconsistent | `Source/Giaoly/frmLopGiaoLy.cs`: import button handler; `Source/Giaoly/frmImportHocVien.cs`: `btnStart_Click`, `btnStop_Click` | Import valid, duplicate, malformed, and partially interrupted synthetic workbooks; define transaction/rollback expectations |
+
+`Source/ChuongTrinh/frmCauTrucGiaoXu.cs` is compiled only by the obsolete `ChuongTrinh.csproj`, not by `GiaoXu.csproj` in the primary solution. Its tree view is historical evidence, not a current entry point. Do not create a replacement route unless Windows runtime observation or the domain expert proves it is still used.
+
+#### Validation and side-effect rules to characterize
+
+| Rule candidate | Static behavior | Decision required |
+|---|---|---|
+| Diocese, deanery, parish name, and parish address are required | `frmGiaoXu.btnUpdate_Click` blocks blank values | Confirm which contact/image/note fields are optional and whether hierarchy identifiers may ever change |
+| Organization save mutates the three-level chain together | One `DataSet` carries `GiaoPhan`, `GiaoHat`, and `GiaoXu` | Target command must be atomic and must not allocate a new parish id during an ordinary edit |
+| Parish-section code is numeric and unique; name is required and intended to be unique within its parent | `frmGiaoHo.checkInput` | Correct the suspicious parent-name predicate through tests; do not reproduce an apparent boolean bug |
+| Deleting a populated parish section is a destructive cross-domain cascade | `frmGiaoHo.gxAddEdit1_DeleteClick` deletes household membership, marriage links, sacraments, vocations, transfers, banns, people, households, and the section | Domain expert must choose forbid, reassign, or archive; the web application must not silently port this cascade |
+| Clergy id, saint name, full name, and role are required | `frmLinhMuc.checkInput` | Confirm whether saint name is truly mandatory for every clergy record |
+| A possible duplicate clergy record warns but may be accepted | `frmLinhMuc.checkLinhMuc` compares saint name, full name, and birth date | Approve match fields and the explicit override/audit requirement |
+| Active-clergy selectors use an empty end date | Report and bann callers append `DenNgay IS NULL` | Define inclusive/exclusive service-date boundaries and handling of partial dates |
+| Association name and at least one member are required | `frmHoiDoan.CheckInputData` | Confirm whether an empty newly formed association is a valid draft |
+| More than one current leader blocks; no leader warns but can continue | `frmHoiDoan.ktHoiTruong` | Approve exact cardinality and effective-date behavior during leader succession |
+| A person cannot have two current memberships in the same association | `frmHoiDoan.insertDataGrid`; `GxHistoryHoiDoan.UpdateHoiDoan` | Re-entry must create a new interval rather than overwrite history |
+| Association join date may be omitted after warning | `GxHistoryHoiDoan.UpdateHoiDoan` | Decide whether unknown precision is valid or the date is mandatory |
+| Join/exit dates cannot precede association founding; exit cannot precede or equal join | `GxHistoryHoiDoan.UpdateHoiDoan` | Verify equality semantics and partial-date comparisons |
+| Re-entry must occur after the latest recorded exit | `GxHistoryHoiDoan.UpdateHoiDoan` | Define deterministic behavior when historical intervals overlap or dates are partial |
+| Removing a member offers hard delete or an exit dated “now” | `frmHoiDoan` delete handler | Prefer history-preserving exit; identify the exceptional case, if any, that permits hard delete |
+| Clearing every vocation field deletes the `TanHien` row | `GxTanHien.UpdateData` and `isNull` | Decide whether an explicit archived history record is required instead |
+| Adding vocation data to a person marked as having a family warns but may continue | `GxTanHien.checkInput` | Confirm valid exceptions and audit the override |
+| Active vocation blocks marriage while returned vocation does not | `GxHonPhoi.checkInput` uses `SELECT_TANHIEN_HIENTAI` | Approve the exact meaning of `DaHoiTuc` and all status/date combinations |
+| Catechism grade requires name and manager; class requires name | `frmKhoiGiaoLy.checkInput`; `frmLopGiaoLy.checkInput` | Confirm whether manager/teacher are people records and whether vacancies are allowed |
+| A student may belong to only one class in the same grade | `frmLopGiaoLy.addGiaoDan` checks classes sharing `MaKhoi` | Confirm whether the uniqueness scope also includes catechism year |
+| Deceased, transferred, or deleted people may be enrolled after warning | `frmLopGiaoLy.addGiaoDan` | Approve legitimate historical use and block accidental current enrollment |
+| Student and teacher links are unique within a class | `frmLopGiaoLy.addGiaoDan`, `addGiaoLyVien` | Verify whether one person may simultaneously be a student and teacher |
+| New student sequence is maximum plus one | `frmLopGiaoLy.getNextSoThuTu`; `frmChuyenLop.gxCommand1_OnOK` | Define behavior for gaps, duplicate legacy sequences, and concurrent offline enrollment |
+| Promotion currently copies selected students without removing the source link | `frmChuyenLop.gxCommand1_OnOK` | Decide whether this means promotion history, duplication, or a legacy defect |
+| Deleting a grade/class cascades to class/student links | `frmKhoiGiaoLyList` and `frmKhoiGiaoLy` delete handlers | Web behavior should archive or refuse when history exists unless explicit approved deletion rules say otherwise |
+| Catechism import may leave partial writes when interrupted | `frmImportHocVien.btnStop_Click` warning and threaded `ImportData` | Replacement import must be dry-run capable, re-runnable, and atomic per accepted batch |
+
+#### Data and query intent map
+
+| Intent family | Legacy objects / query symbols | Target ownership and acceptance focus |
+|---|---|---|
+| Organization hierarchy | `GiaoPhan`, `GiaoHat`, `GiaoXu`; `SELECT_GIAOPHAN`, `SELECT_GIAOHAT`, `SELECT_GIAOXU` | Organization module; one approved chain, stable ids, report-header projection |
+| Parish sections | `GiaoHo`; `SELECT_GIAOHO`, `UPDATE_GIAOHO`, membership count queries | Organization module; parent hierarchy, uniqueness, safe archive/reassignment |
+| Clergy service | `LinhMuc`; `SELECT_LINHMUC_LIST`, `SELECT_CHECK_LINHMUC`, `DELETE_LINHMUC_THEO_ID` | Clergy module; identity match, service intervals, downstream active selector |
+| Associations | `HoiDoan`, `ChiTietHoiDoan`; list/detail/member queries | Associations module; association metadata, role, interval history, one-current-leader policy |
+| Vocation | `TanHien`; person lookup and `SELECT_TANHIEN_HIENTAI` | Vocations module; formation milestones, partial dates, returned/current status, marriage constraint |
+| Catechism structure | `KhoiGiaoLy`, `LopGiaoLy` | Catechism module; year/grade/class identity and lifecycle |
+| Catechism participation | `ChiTietLopGiaoLy`, `GiaoLyVien` joined to `GiaoDan`/`GiaoHo` | Catechism module; student/teacher links, ordering, completion, notes, promotion history |
+| Catechism interoperability | Excel `Sheet1` import and Janus grid exports | ImportExport/Catechism boundary; documented synthetic format, validation report, atomic import, CSV/XLSX replacement |
+
+#### LEG-005 closure procedure
+
+1. Prepare one synthetic walkthrough per surface above, with no production-derived names, dates, contacts, notes, or identifiers.
+2. Run the workflows on the supported Windows/x86 legacy environment and record field order, defaults, shortcuts, confirmation branches, produced files, and the final rows affected. Do not treat static source as runtime proof.
+3. Have the named domain expert approve one acceptance example for organization hierarchy, parish-section lifecycle, clergy service interval, association membership history, vocation/return history, catechism enrollment, promotion, completion, import, and export.
+4. Resolve every “Decision required” item above, with special written decisions for parish-section cascade deletion, membership hard deletion, empty-vocation deletion, catechism promotion semantics, and interrupted import.
+5. Reconcile observed rows and query shapes with DBI-001–004 after the real data package arrives. Preserve partial-date and encoding classes without copying production values.
+6. Reference the approved example ids from LEG-005, FLO-003, and the corresponding ORG/CLG/ASC/VOC/CAT cards. Only then mark LEG-005 complete.
+
 ## 3. Scope
 
 ### 3.1 First production scope
@@ -809,7 +885,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | [ ] LEG-002 | M | LEG-001 | Static catalog in `docs/architecture/people-household-inventory.md`: 14 surface groups, 17 validation/side-effect groups, and 8 SQL-intent families | Repository review packet complete; blocked on domain-expert review and representative examples |
 | [ ] LEG-003 | M | LEG-001 | Static catalog in `docs/architecture/sacrament-inventory.md`: 7 surface groups, batch-generation algorithm, 11 validation groups, and 6 SQL-intent families | Repository review packet complete; blocked on an approved example for every supported sacrament path and edge case |
 | [ ] LEG-004 | M | LEG-001 | Static catalog in §2.9: 12 compiled surfaces, 17 validation/side-effect rules, 8 SQL-intent families, and 3 source-created saved-query hypotheses | Repository review packet complete; blocked on schema-only extraction from the real `.mdb`, one named purpose and synthetic fixture per deployed saved query, and domain-expert approval |
-| [ ] LEG-005 | M | LEG-001 | Catalog catechism, association, vocation, clergy, hierarchy | Every module has an acceptance example |
+| [ ] LEG-005 | M | LEG-001 | Static catalog in §2.10: 13 compiled surfaces, 25 validation/side-effect rules, and 8 data/query-intent families | Repository review packet complete; blocked on Windows runtime observation, one domain-expert-approved acceptance example per module, and resolution of the destructive/ambiguous behaviors listed in §2.10 |
 | [x] LEG-006 | S | LEG-001 | Catalog imports, merge, backup, statistics (`frmThongKeChung`) in `docs/architecture/legacy-operations-inventory.md` | 33 import/merge/backup/statistics command rows reconcile to compiled entry points and each has an explicit preserve / replace / retire decision |
 | [ ] DBI-001 | S | SEC-001 | Schema-only Access inventory into restricted work storage | Table, key, index, and type list reconciles with §2.3 |
 | [ ] DBI-002 | M | DBI-001 | Profile null/blank/distinct/range per field from a real parish copy | Machine-readable profile plus sanitized summary |
