@@ -989,6 +989,57 @@ Static source linkage establishes these report paths without deciding whether ea
 
 **RPI-001 status (2026-07-29): candidate inventory complete; task remains open.** At kickoff, obtain a read-only copy of the pilot installation's active template folder, record its configured diocese, hash every deployed file, and compare that manifest with this tree. The domain owner must then mark each common and pilot-override family as in scope, fallback-only, superseded, locally customized, or unused. Do not infer the active `TP HCM A4` alternative from `(1)` naming and do not approve a candidate merely because its filename has a static caller.
 
+#### 7.1.2 Static template-property audit (RPI-002 preparation)
+
+The checked-in candidates use literal bracketed search-and-replace tokens such as `[HoTen]`; they do not use Word merge fields. On 2026-07-29, all 63 files were text-extracted and their unique token sets compared. The 19 common candidates have these provisional shapes and token counts:
+
+| Shape | Common candidates and unique bracket-token counts | Layout and signature observations |
+|---|---|---|
+| Certificate | `BiTich` 23; `ChungNhanHonPhoi` 42; `ChungNhan_GioiThieuHocGiaoLy` 19; `RuaToi` 15; `ThemSuc` 15; `XTRL` 14 | Portrait, fixed prose, recipient/parish identity, one-person or couple facts, and a priest signature/seal area |
+| Letter | `GioiThieuChuyenXu` 45; `GioiThieuGiaoLyHonPhoi` 18; `GioiThieuRuaToi` 12; `GioiThieuThemSuc` 14; `HonPhoi` 27 | Mostly portrait, prose-heavy, receiving-parish fields, issue date, and priest signature; `GioiThieuRuaToi` is A5 landscape |
+| Banns | `RaoHonPhoi` 26; `KQRaoHonPhoi` 39 | `RaoHonPhoi` combines an outgoing request and a return-result/signature region; `KQRaoHonPhoi` is a single result certificate |
+| Personal record | `LyLichCaNhan` 49 | Dense portrait summary of identity, sacraments, marriage, status, contact, education, and burial data with certification area |
+| Fixed household form | `PhieuGiaDinh-A3` 122; `PhieuGiaDinh` 106 | Landscape grid with eight pre-numbered member slots and a changes ledger; the modern-named file is actually OOXML and contains two tables across three sections |
+| Expanding list/batch | `DanhSachRaoHonPhoi` 11; `SoGiaDinh` 22; `SoGiaDinh1` 18 | Landscape Excel prototypes; application code finds the bracketed detail row, writes records, copies/merges rows, applies borders, and can alter styling |
+
+The common token counts above are schema clues, not completeness proof. Source behavior adds or derives tokens that need not be visible in every candidate, including year-only sacrament fields, generated issue dates, dotted blank fallbacks, and English issue-date formatting. `ReportSoGiaDinh` also makes content conditional on settings for archived/deleted/transferred/married members, strike-through, member ID versus sequence, place of event, sacrament register number, godparent, marriage witnesses, and parents.
+
+The common files alone do not define one stable field contract for an override family. Grouping variants by normalized filename produces the following number of distinct token signatures:
+
+| Override family | Checked-in files | Distinct token signatures | Material conclusion |
+|---|---:|---:|---|
+| `BiTich` | 8 | 5 | Common/Phan Thiet/Vinh share one contract; TP HCM and the normal TP HCM A4 file share another |
+| `ChungNhanHonPhoi` | 8 | 8 | Every checked-in candidate has a different token set |
+| `HonPhoi` | 8 | 8 | Every checked-in candidate has a different token set |
+| `RaoHonPhoi` | 8 | 4 | Common/Phan Thiet, BMT/Xuan Loc, and TP HCM/normal TP HCM A4/Vinh form three shared groups; the A4 `(1)` file is separate |
+| `RuaToi` | 6 | 3 | Common/Phan Thiet/Vinh and TP HCM/normal TP HCM A4 form shared groups; the A4 `(1)` file is separate |
+| `ThemSuc` | 6 | 3 | Same grouping pattern as `RuaToi` |
+| `XTRL` | 6 | 6 | Every checked-in candidate has a different token set |
+
+Across the 20 logical families, the repository therefore contains 50 family-specific token signatures. A diocese override cannot be treated as CSS or stationery alone: it may require a different typed view model, optional-field policy, fixed wording, and acceptance fixture.
+
+Two page geometries are authoritative because they were read directly from the original OOXML:
+
+- `GioiThieuRuaToi.doc`: A5 landscape (`11909 × 8395` twips), with `284`-twip top/right/bottom and `737`-twip left margins.
+- `PhieuGiaDinh.doc`: A4 landscape (`16838 × 11906` twips), with `720`-twip margins on all sides and three section definitions.
+
+A compatibility conversion of the other 14 common Word candidates reported US Letter portrait (`12240 × 15840` twips), `1440`-twip top/bottom and `1800`-twip left/right margins, predominantly Times New Roman. Treat those values as provisional: conversion can normalize legacy OLE layout. It also reported Times New Roman for all common Word candidates except `BiTich` (Times New Roman and Arial), `GioiThieuRuaToi` (Times New Roman and Times), and `PhieuGiaDinh` (Times). Font availability, substitution, exact sizes, embedded objects, and printer-dependent pagination remain unverified.
+
+The inspection environment could produce and review first-page Quick Look thumbnails for the 19 common files, including correctly suffixed temporary copies of the two mislabeled OOXML files. It could not produce authoritative all-page Word/Excel renders or printed output; first-page thumbnails, text extraction, and compatibility-converted geometry do not satisfy RPI-002.
+
+For every template admitted by RPI-001, the final property record must include:
+
+1. Deployed path, SHA-256, true content type, logical family, language, and fallback/override precedence.
+2. Paper name and exact dimensions, orientation, margins, printable area, section/page count, headers/footers, and required printer settings.
+3. Font family, size, style, embedding/substitution policy, Vietnamese glyph coverage, table geometry, borders, images, and fixed legal/pastoral wording.
+4. Complete token contract: type, source field, formatting, blank/null behavior, partial-date behavior, maximum length, repetition semantics, and every source-code-derived token.
+5. Conditional regions and row growth/pagination behavior, including empty, normal, longest realistic, more-than-eight-member, and multi-page cases.
+6. Signature, title, date, recipient, seal, handwritten space, and incomplete-form requirements.
+7. A Word/Excel reference render and physical print from the supported Windows/x86 legacy environment, compared with the deployed file rather than only the repository candidate.
+8. Domain-owner decisions for every unexplained token difference, local customization, typo, clipped field, and approved deviation.
+
+**RPI-002 status (2026-07-29): static property and token-contract preparation complete; task remains open.** Close it only after RPI-001 fixes the pilot set and every item above is captured from the deployed templates, rendered with the legacy Office path, printed, and classified by the domain owner. The current environment's lack of an authoritative Word/Excel all-page renderer is a recorded evidence limitation, not an implicit approval.
+
 ### 7.2 Registry shape
 
 The legacy Office files are design references, not runtime templates. Base templates live at:
@@ -1149,7 +1200,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | [ ] FLO-003 | S | LEG-005, LEG-006 | Provisional remaining-module map in §3.6: all 28 `LoadFunction` keys, 10 distinct menu commands, and 12 walkthrough scripts; correct the earlier unsupported count of 30 tab entry points | Static map complete; blocked on Windows runtime capture, statistics formula approval, and domain-expert walkthrough/sign-off |
 | [ ] FLO-004 | S | FLO-001–003 | Provisional keyboard map in §3.7: declared/effective distinction, 12 intent bindings, dispatch/focus rules, and cross-browser verification matrix | Static map complete; blocked on Windows legacy observation, operator approval, and supported-browser keyboard/accessibility tests |
 | [ ] RPI-001 | S | SEC-001 | Finalize the candidate report catalog in §7.1.1 against the pilot deployment | Every in-scope path and checksum matches the active `BIN/Template/` copy |
-| [ ] RPI-002 | M | RPI-001 | Record paper, margins, fonts, fields, conditions, signatures, language variants | No in-scope template unclassified |
+| [ ] RPI-002 | M | RPI-001 | Complete the §7.1.2 property records from deployed templates and authoritative legacy renders | No in-scope template, token contract, condition, signature region, or language variant unclassified |
 | [ ] RPI-003 | S | RPI-002 | Select and approve the five prototypes | Selection covers list, certificate, letter, fixed form, batch |
 
 ### 11.3 Foundation (Phase 1)
