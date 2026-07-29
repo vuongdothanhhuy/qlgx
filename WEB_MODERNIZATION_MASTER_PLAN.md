@@ -213,18 +213,21 @@ Every one of these is a characterization test waiting to be written, and every o
 
 `frmMain.LoadFunction` handles **28 dispatch keys**. They are not all tabs: some call `ShowForm`, some open modal dialogs, some run background operations, and three are retired network/update behavior. The menu also exposes distinct import, merge, backup, restore, export, option, password, and exit commands. §3.6 maps both sets and replaces the earlier unverified “30 tab entry points” count.
 
-Keyboard shortcuts are defined once and used across every screen — `frmBase.cs:14-15` and `GXAddEdit.cs:344-346`:
+The legacy source distinguishes **declared** shortcuts from shortcuts that are actually dispatched:
 
-| Key | Action |
-|---|---|
-| F2 | New / add |
-| F3 | Delete |
-| F4 | Edit |
-| F6 | Save / update |
-| F11 | Close |
-| F1 | Context help |
+| Key | Source evidence | Static conclusion |
+|---|---|---|
+| F1 | `frmMain.Designer.cs` assigns it to Help; `frmBase.HelpRequested` uses each form's `HelpKey` | Context help is wired through WinForms help handling |
+| F2 | `GXAddEdit.HK_ADD` | Declared as add, but repository search finds no handler reading `HK_ADD` or `Keys.F2`; runtime behavior unproved |
+| F3 | `GXAddEdit.HK_DEL` | Declared as delete, but no handler reads it; runtime behavior unproved |
+| F4 | `GXAddEdit.HK_EDIT` | Declared as edit, but no handler reads it; runtime behavior unproved |
+| F6 | `frmBase.HK_UPDATE`; `frmBase.OnKeyDown` handles key value 117 | Attempts OK/save only for an enabled `GxCommand` that is a direct child; nested command bars may not receive it |
+| F9 | `frmBase.OnKeyDown` handles key value 120 | Actually invokes cancel on recursively found command bars when `AllowHotkey` is true |
+| F11 | `frmBase.HK_CLOSE` | Declared as close, but no handler reads `HK_CLOSE` or key value 122; the previous plan's “F11 closes” claim was unsupported |
+| Escape | `frmBase.OnKeyDown` | Closes a modal form as Cancel; individual controls/forms add other Escape behavior |
+| Alt + mnemonic | `&` characters in menu/button labels | WinForms supplies many local keyboard mnemonics whose actual scope depends on the focused control |
 
-Parish staff have used these for years. **They are preserved verbatim in the web application** (§3.3). Browsers reserve some function keys, so where a conflict exists, document it and provide the closest equivalent — do not silently invent a new scheme.
+The web application preserves **operator-confirmed effective behavior and intent**, not unused declarations or accidental key-code bugs. §3.7 defines provisional browser bindings and the evidence required before they become acceptance criteria.
 
 ### 2.8 Network behavior to retire
 
@@ -421,7 +424,7 @@ The desktop platform is obsolete; the workflows on it are not. Staff should be a
 
 - **Screen sequence matches.** If the desktop requires selecting a parish section before listing people, the web application does too. Do not "improve" a flow during conversion — capture it, ship it, and change it later with the domain expert's agreement and a recorded reason.
 - **Field order and grouping match** the legacy form within each screen.
-- **Keyboard shortcuts are preserved verbatim** (§2.7). Data entry here is keyboard-heavy and high-volume; a mouse-first redesign is a regression regardless of how modern it looks.
+- **Keyboard workflows are preserved from observed behavior** (§2.7), with browser-safe aliases where the browser or operating system reserves a key. Data entry here is keyboard-heavy and high-volume; a mouse-first redesign is a regression regardless of how modern it looks.
 - **Vocabulary matches.** Screen labels use the same Vietnamese terms as the desktop — `Giáo dân`, `Gia đình`, `Bí tích`, `Hôn phối`, `Giáo họ`. Do not translate, modernize, or "clarify" domain vocabulary.
 - **The 28 dispatch keys plus distinct menu-only commands in §2.7 map to routes, actions, or explicit retirements**, so a user who knows where a function lives still knows what replaced it.
 
@@ -439,7 +442,7 @@ Modernization applies to *technology and ergonomics* — responsiveness, search,
 - Active lists show a parish-section selector with an “all” option. They normally restore `Memory.CurrentGiaoHo`; a search result bypasses that default once through `DangTimKiemGiaDinhGiaoDan`.
 - Creating a person from a section-filtered list preselects that section. After a successful add, the legacy list immediately opens another blank person editor for rapid entry.
 - Creating a household from a section-filtered list passes that section to the editor.
-- The common command bar supplies F2 add, F3 delete, F4 edit, F6 save/update, and F11 close. Runtime observation must verify every screen actually receives those keys and what happens with unsaved edits.
+- The common command bar supplies visible add/delete/edit/save/cancel actions. F2/F3/F4/F11 are declarations without repository dispatch evidence, while F6/F9/Escape are context-dependent (§2.7); runtime observation must establish what each screen actually receives and what happens with unsaved edits.
 
 #### Walkthrough scripts
 
@@ -591,6 +594,44 @@ Duplicate menu commands for search, find/replace, version, help, and about reuse
 #### FLO-003 closure
 
 For every route/action record the legacy key/menu path, current label, target path, authorization, offline/online availability, source module, walkthrough script, and preserve/change/retire decision. FLO-003 closes only after all 28 keys and ten distinct menu commands are reconciled, the twelve scripts are completed on synthetic data, statistics formulas are approved, and the expert signs off catechism/association/vocation/import behavior. Retired entries remain in the map so they cannot be accidentally reintroduced.
+
+### 3.7 Provisional browser keyboard map
+
+**FLO-004 status (2026-07-29): static map complete; runtime and operator approval pending.** Every command remains available as a visible, focusable button with its shortcut in the accessible name/tooltip. Shortcuts never bypass authorization, validation, confirmation, dirty-state protection, or disabled state.
+
+| Intent | Legacy evidence | Proposed web binding | Browser/OS conflict and fallback |
+|---|---|---|---|
+| Context help | F1 is assigned to Help and forms expose `HelpKey` | `Shift+F1`; optionally F1 when the target browser proves it can be captured | Browsers commonly reserve F1 for browser help; visible Help button and route are mandatory |
+| Add/new | F2 declaration only; button mnemonic `&Thêm` | F2 after operator confirmation; `Ctrl+Alt+N` alias | Function/media-key mode varies by keyboard; visible “Thêm (F2)” button |
+| Delete/remove/archive | F3 declaration only; button mnemonic varies between remove/delete | F3 after confirmation; `Ctrl+Alt+D` alias | Browsers use F3 for find-next; destructive action always opens an explicit semantic confirmation |
+| Edit/view | F4 declaration only; button mnemonic `&Xem-Sửa` | F4 after confirmation; `Ctrl+Alt+E` alias | OS/browser behavior varies; no action when no row is selected or permission is absent |
+| Save/update/accept | F6 conditionally dispatches `GxCommand.OnOK` | `Ctrl+S` primary plus F6 alias where capturable | F6 commonly focuses browser chrome and Ctrl+S normally saves the page; page handler must prevent default only in an active editable form |
+| Cancel/close modal | Escape closes modal; F9 actually invokes legacy cancel when enabled | Escape primary; F9 alias only if operators recognize it | Escape also exits fullscreen/stops loading; dirty editor must ask before discard and never close twice |
+| Close workspace tab | F11 was declared but not dispatched | `Ctrl+Alt+W`; visible tab close | F11 is browser fullscreen and is not overridden; do not claim legacy parity without runtime proof |
+| Move focus | Native Tab / Shift+Tab; `GxDateInput` has custom date-part movement | Tab / Shift+Tab in DOM order; arrow keys within composite date/grid controls | Never create a keyboard trap; focus order follows the approved field sequence, not visual CSS order |
+| Activate control | WinForms AcceptButton, Enter handlers, and local control behavior | Enter activates focused button or commits the current picker/grid edit; form submission only where explicitly approved | Multiline notes retain Enter; prevent accidental full-form save from grid/date editing |
+| Dismiss popup | Escape/local cancel | Escape closes only the topmost popup first | Second Escape reaches dirty editor only after popup closes |
+| Grid navigation | Janus grid keyboard behavior requires observation | Arrow keys move cell/row; Home/End/Page keys scroll; Enter opens/selects only where approved | Browser scroll must not steal keys while the grid owns focus; screen-reader mode must remain usable |
+| Local command mnemonic | WinForms `&` labels | Do not duplicate Alt-letter mnemonics globally; use displayed shortcut hints and optional command palette | Browser/OS/menu mnemonics conflict and translated labels change letters |
+
+#### Dispatch and focus rules
+
+1. Install shortcut handling only inside the application shell. Ignore events when `event.isComposing`, when modifier combinations belong to assistive technology, or when the active control needs the key for text/date/grid editing.
+2. Resolve context from the topmost modal, otherwise the active route. Never dispatch to an obscured form, inactive tab, or background route.
+3. Call `preventDefault()` only after a recognized, enabled in-app command is selected. An unknown or disabled shortcut keeps normal browser behavior.
+4. A destructive key opens the same explicit confirmation as the button. The confirmation names the action—archive, remove link, delete permanently, leave association—not generic Yes/No semantics.
+5. Save is single-flight and idempotent. Repeated F6/Ctrl+S while a save is pending cannot create duplicates; offline save reports local durability and later sync state separately.
+6. After validation failure, move focus to the first invalid field and announce the summary. After successful add/edit/delete, return focus to the affected row or the approved rapid-entry field.
+7. Route change, tab close, Escape, browser Back, reload, and sign-out share one dirty-state guard. Confirm once; cancel restores the same focus and data.
+8. Shortcuts are discoverable in button text/tooltips and a help overlay. User customization is out of scope until the fixed map is approved.
+
+#### Verification matrix
+
+Run every approved shortcut on Windows and macOS in the supported Chromium browser, at 100%, 125%, and 150% zoom, with ordinary and media-key function-key modes where available. Cover list, editor, nested editor, modal, picker, grid cell edit, date control, multiline note, disabled command, unauthorized role, dirty state, offline state, pending save, and screen reader/keyboard-only navigation.
+
+For each case record physical key, browser event received, default browser action, application command, focused element before/after, announcement, persisted result, and duplicate-event count. Compare button and shortcut paths: they must call the same command and yield identical validation/audit effects.
+
+FLO-004 closes only after Windows legacy observation classifies F1/F2/F3/F4/F6/F9/F11/Escape as effective, ineffective, or context-specific; the domain expert approves the intended action; browser tests validate each retained key and fallback; and every unresolved conflict has a documented substitute. The static table is not permission to override browser-reserved keys blindly.
 
 ## 4. Locked Architecture Decisions
 
@@ -1062,7 +1103,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | [ ] FLO-001 | M | LEG-002 | Provisional people/household map in §3.4: 10 walkthrough scripts, entry-point/default notes, field-group snapshot, and observation record | Static draft complete; blocked on Windows runtime capture and domain-expert walkthrough/approval of every script |
 | [ ] FLO-002 | M | LEG-003, LEG-004 | Provisional sacrament/marriage/bann/transfer map in §3.5: 14 walkthrough scripts, field/command snapshot, and shared acceptance record | Static draft complete; blocked on Windows runtime capture, saved-query fixtures, and domain-expert walkthrough/approval |
 | [ ] FLO-003 | S | LEG-005, LEG-006 | Provisional remaining-module map in §3.6: all 28 `LoadFunction` keys, 10 distinct menu commands, and 12 walkthrough scripts; correct the earlier unsupported count of 30 tab entry points | Static map complete; blocked on Windows runtime capture, statistics formula approval, and domain-expert walkthrough/sign-off |
-| [ ] FLO-004 | S | FLO-001–003 | Record the §2.7 shortcut table and browser conflicts in `docs/architecture/keyboard-map.md` | Every legacy key has a web binding or a documented substitute |
+| [ ] FLO-004 | S | FLO-001–003 | Provisional keyboard map in §3.7: declared/effective distinction, 12 intent bindings, dispatch/focus rules, and cross-browser verification matrix | Static map complete; blocked on Windows legacy observation, operator approval, and supported-browser keyboard/accessibility tests |
 | [ ] RPI-001 | S | SEC-001 | Report catalog for the in-scope set (§7.1) | Paths match `BIN/Template/` |
 | [ ] RPI-002 | M | RPI-001 | Record paper, margins, fonts, fields, conditions, signatures, language variants | No in-scope template unclassified |
 | [ ] RPI-003 | S | RPI-002 | Select and approve the five prototypes | Selection covers list, certificate, letter, fixed form, batch |
