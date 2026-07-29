@@ -158,6 +158,156 @@ Duplicates are retained because BUG-001 requires one row per recorded entry:
 | Statistics printing/export | CHG-019, CHG-059, CHG-084 | Same result-availability concern across print and Excel export paths |
 | Household-sheet output parity | CHG-086, CHG-087 | Template parity and option parity are distinct but should share one report contract |
 
+## History-only rule candidates
+
+The 99-commit legacy range ends at tagged release commit `360581d`. It begins
+with the repository import and intentionally excludes `3887a7c` (`Add AI
+stuff`) and all modernization commits. Commit subjects and changed paths were
+reviewed locally; credential-bearing diffs and database contents were not
+printed or copied.
+
+These behaviors are stated more specifically in history than in the changelog,
+or are absent from it:
+
+| ID | Commit evidence | English / implied rule | Module | Status |
+|---|---|---|---|---|
+| HIST-001 | `29134cc` | The account-management list must render the available account records correctly. | Accounts | Rule — pending BUG-003 |
+| HIST-002 | `0c39c2c`, `82c2609` | Support the required introduction-document families: catechism study, parish transfer, marriage catechism, baptism, and confirmation. Exact availability and fields require report review. | Reports / introductions | Rule — pending BUG-003 |
+| HIST-003 | `add5848` | A blank date cell in an otherwise valid Excel import is treated as missing data rather than causing the import to fail. | Import / Excel / partial dates | Rule — pending BUG-003 |
+| HIST-004 | `f2d16ab` | After deleting a person or household, refresh the relevant list without an error or stale deleted row. | People / households / lists | Rule — pending BUG-003 |
+| HIST-005 | `c94feff` | Day-and-month inputs use partial-date validation and must not be rejected merely because no year exists. | Partial dates / validation | Rule — pending BUG-003 |
+| HIST-006 | `d09b37b` | Find-and-replace can target address data. Authorization, preview, and audit behavior require review. | People / bulk edit | Rule — pending BUG-003 |
+| HIST-007 | `7a56e10` | Legacy full dates were formatted `dd.MM.yyyy`; the modern display/export format requires explicit locale review. | Dates / presentation | Rule — pending BUG-003 |
+| HIST-008 | `9d96c33` | Father and mother selectors remain usable when their text fields already contain information. | People / parents | Rule — pending BUG-003 |
+| HIST-009 | `9460452`, `96b13b1` | Do not delete a parishioner who is referenced as a member, husband, or wife of a household; require the relationship to be resolved first. | People / households / integrity | Rule — pending BUG-003 |
+| HIST-010 | `9460452` | When assigning parents, validate that each parent's age/date is older than the child's. Partial and unknown birth dates need an approved comparison policy. | People / parents / validation | Rule — pending BUG-003 |
+| HIST-011 | `96b13b1` | Refresh both active and archived household/person lists after delete, transfer out, or transfer back. | Transfers / lists | Rule — pending BUG-003 |
+| HIST-012 | `314e700` | Generate a unique identity code during Excel import when the source identity-code cell is blank. | Import / identity | Rule — pending BUG-003 |
+| HIST-013 | `98d68c5` | Load catechism students in ascending class order/sequence. The sort key requires review. | Catechism / class | Rule — pending BUG-003 |
+| HIST-014 | `c0d4f08` | Personal-profile and First Communion introduction reports must bind each value to the correct labeled field. | Reports / field mapping | Rule — pending BUG-003 |
+| HIST-015 | `2a03e46`, `00dc94c`, `b1e4492`, `29aa49f` | Print every eligible household member, adding rows/pages when the member count exceeds the template's original seven/eight-row area. | Reports / household sheet | Rule — pending BUG-003 |
+| HIST-016 | `eddf527` | Display person/household photos without distorting their aspect ratio. | People / households / photos | Rule — pending BUG-003 |
+| HIST-017 | `7d4e236` | Include each household member's gender when required by the household-sheet contract. | Reports / household sheet | Rule — pending BUG-003 |
+| HIST-018 | `588bd3d` | Selecting a person or household from sacrament detail must load the selected record, not stale or unrelated picker state. | Sacraments / people / households | Rule — pending BUG-003 |
+| HIST-019 | `1b970ca`, `b21699b` | Person selection for a catechism class must accept the chosen eligible parishioner; sacrament detail also offers an authorized route to edit that person's record. | Catechism / sacraments / people | Rule — pending BUG-003 |
+| HIST-020 | `ca250b4` | If an MGC marriage references a spouse not yet found in imported people, create/reconcile the person before creating the marriage relationship. | Import / MGC / marriage | Rule — pending BUG-003 |
+| HIST-021 | `9299226` | Provide the approved bann-results (`Kết quả rao hôn phối`) report and its required fields. | Reports / banns | Rule — pending BUG-003 |
+| HIST-022 | `229bf9d` | The marriage list may show a derived years-married value; calculation date, partial dates, and rounding require review. | Marriage / list | Rule — pending BUG-003 |
+| HIST-023 | `b91db2e` | Changing sub-parish must handle an absent/null selection without crashing and leave a valid state. | Parish hierarchy / validation | Rule — pending BUG-003 |
+| HIST-024 | `b91db2e` | Importing spouses must reconcile duplicates rather than violating a unique key or creating duplicate people/relationships. | Import / marriage / identity | Rule — pending BUG-003 |
+| HIST-025 | `3fc4973` | Date import and grid/text binding must handle blank/null source values without a null-reference failure. Exact accepted date forms require profiling. | Import / dates | Rule — pending BUG-003 |
+| HIST-026 | `77b65bf`, `0a7cbc2` | Store and display Anointing of the Sick information alongside the other supported sacrament/catechism details. | People / sacraments | Rule — pending BUG-003 |
+
+## Git history traceability ledger
+
+`Mapped` means the commit is represented by one or more rule rows.
+`Non-behavioral` means it changes packaging, generated output, help, repository
+hygiene, merge state, version metadata, or an implementation detail without a
+separately testable user outcome. Aggregate commits remain linked to the
+closest recorded release rows rather than being discarded.
+
+| # | Commit | Subject | Classification and rule mapping |
+|---:|---|---|---|
+| 001 | `3d41697` | first commit | Non-behavioral: repository baseline import |
+| 002 | `9af0049` | Update something | Mapped aggregate: CHG-099 and CHG-110 account/security introduction; the subject is too broad for another independent rule |
+| 003 | `d88759c` | Final Update | Non-behavioral: removed temporary/unused source and project artifacts |
+| 004 | `d162cc3` | Fix | Non-behavioral: generated-output and project cleanup; subject provides no testable outcome |
+| 005 | `29134cc` | Fix lỗi hiển thị danh sách account | New: HIST-001 |
+| 006 | `3ef45e5` | Update Help | Non-behavioral: help/account documentation and related cleanup |
+| 007 | `08570cc` | Final | Mapped aggregate: CHG-040 and CHG-085–CHG-100; broad subject cannot isolate a further rule |
+| 008 | `0c39c2c` | Final Final | New: HIST-002 |
+| 009 | `82c2609` | Final | Mapped: HIST-002; template/report refinements |
+| 010 | `0b2ad48` | change 07/02/2018 | Mapped aggregate: CHG-085–CHG-116; broad snapshot with no independently named fix |
+| 011 | `a593993` | Prepare for merge with master | Mapped aggregate: CHG-085–CHG-116; merge preparation provides no unique rule |
+| 012 | `ece8b38` | Final | Non-behavioral: IDE-state-only change |
+| 013 | `62c5a6f` | Remove backup folder | Non-behavioral: repository hygiene |
+| 014 | `3412fb9` | Commit for version 3.2.1 | Mapped aggregate: CHG-085–CHG-095 |
+| 015 | `e387f70` | Commit missing file for version 3.2.1 | Mapped: CHG-112 and CHG-113; also restores project/package files |
+| 016 | `1fe7a9c` | hihi | Mapped aggregate: CHG-064 and CHG-067 association management |
+| 017 | `49233c3` | King | Mapped aggregate: CHG-064 and CHG-067 association membership/history |
+| 018 | `c2a175f` | Hiep commit form HoiDoan | Mapped aggregate: CHG-064 and CHG-067 association forms/history |
+| 019 | `cbd4044` | delete folder BIN | Mapped aggregate: CHG-053 and CHG-064–CHG-080; the misleading subject combines source changes with output cleanup |
+| 020 | `0c8047e` | delete folder BIN | Non-behavioral: tracked build/runtime asset removal |
+| 021 | `dc8005e` | release lan 1 | Non-behavioral: release snapshot |
+| 022 | `d53c7f7` | create index in table ChuyenXu | Non-behavioral: legacy schema/performance implementation; no distinct user rule stated |
+| 023 | `add5848` | Sửa lỗi import dữ liệu từ Excel thất bại khi có dữ liệu ngày tháng để trống. | New: HIST-003; related to CHG-009 and CHG-062 |
+| 024 | `08e4162` | Cập nhật thông tin version | Non-behavioral: version metadata |
+| 025 | `de1414c` | Xóa thư mục Backup | Non-behavioral: repository hygiene |
+| 026 | `ce60272` | Xóa các thư mục không cần thiết | Non-behavioral: repository hygiene |
+| 027 | `5096653` | Thêm icon và chỉnh sửa tiêu đề của hộp thoại cập nhật phiên bản mới tự động. | Non-behavioral: cosmetic change to the retired updater |
+| 028 | `8bb8d3d` | commit Source and delete folder obj and BIN | Mapped aggregate: CHG-064–CHG-084; source snapshot plus generated-output cleanup |
+| 029 | `85c1d8f` | Merge branch 'HiepBranch' of https://github.com/khoannd/qlgx into HiepBranch | Non-behavioral: merge commit with no independent diff |
+| 030 | `dc9b202` | commit Source and delete folder BIN and obj | Non-behavioral: project membership/generated-output cleanup |
+| 031 | `a1d6caa` | push late Source to merge in branch master | Mapped aggregate: CHG-047–CHG-052 household-list work; no unique subject detail |
+| 032 | `564e25e` | commit Source to merge Branch Master | Mapped aggregate: CHG-062 import work plus merge/update artifacts |
+| 033 | `8ab0fc5` | test | Mapped aggregate: CHG-062 import work; temporary backup tree removal is non-behavioral |
+| 034 | `f8f8453` | test | Non-behavioral: merge commit with no independent diff |
+| 035 | `0dcf8c0` | Hiep Merge between branch master and branch HiepBranch | Non-behavioral: removal of tracked local backup archives |
+| 036 | `8475741` | delete file *.pdb and GiaoXu.mdb | Non-behavioral: removal of generated/debug and local database artifacts |
+| 037 | `f2d16ab` | fix error in form GiaDinh and form GiaoDan when load data after delete | New: HIST-004 |
+| 038 | `8de73b5` | sua loi in phieu gia dinh truong hop in nhieu gia dinh | Mapped: CHG-047 and CHG-116 |
+| 039 | `8e9b04c` | doi ngay bon mang chi con ngay thang | Mapped: CHG-053 |
+| 040 | `c94feff` | fix contraint GxDayMonthField | New: HIST-005; related to CHG-053 |
+| 041 | `d09b37b` | add find and replace using address filed | New: HIST-006 |
+| 042 | `7a56e10` | fix format date format(dd.MM.yyyy) | New: HIST-007 |
+| 043 | `54ba701` | gach ten cua nguoi nam hoac nguoi nua khi qua doi o form gia dinh | Mapped: CHG-048 |
+| 044 | `9d96c33` | khi nhap thong tin giao dan khong chon duoc cha hoac me khi textbox cua cha hoac me da co thong tin | New: HIST-008 |
+| 045 | `9460452` | Khong duoc xoa giao dan khi giao dan do co ton tai trong 1 gia dinh khac va check tuoi cua cha me giao dan khi them phai lon hon giao dan | New: HIST-009 and HIST-010 |
+| 046 | `96b13b1` | reload gird danh sach gia dinh khi xoa hoac chuyen xu di hoac chuyen xu ve trong ca 2 form gia dinh luu tru va gia dinh. Rang buoc khong duoc xoa giao dan khi giao dan do la thanh vien hoac la nguoi nam, nguoi nu cua mot gia dinh khac. | New: HIST-009 and HIST-011 |
+| 047 | `314e700` | them ma nhan dang khi import du lieu bang excel khi du lieu cot ma nhan dang trong file excel trong | New: HIST-012 |
+| 048 | `2a03e46` | Sua tinh nang in phieu gia dinh truong hop so luong thanh vien lon hon 7 | New: HIST-015; related to CHG-033 and CHG-094 |
+| 049 | `00dc94c` | them thong tin rao hon phoi, giao ho nam va nu khi xuat chung nhan hon phoi,them thong tin them suc va dia chi cho nguoi nam va nguoi nu cho file template chung khi xuat chung nhan hon phoi, set table gioi thieu chuyen xu khi gia dinh co nhieu hon 7 nguoi | Mapped: CHG-054 and HIST-015 |
+| 050 | `d990e0a` | update template ChungNhanHonPhoi cho cac giao xu | Mapped: CHG-054; diocese template variants remain for report inventory |
+| 051 | `0926730` | Cho phep them sua thong tin CMND khi khong co hinh dai dien, cho xoa hoc vien lop giao ly, cho phep sua so thu tu hoc vien lop giao ly | Mapped: CHG-055, CHG-060, and CHG-061 |
+| 052 | `98d68c5` | sua template tab thanh none va khi load hoc vien lop giao ly luon tang dan | New: HIST-013; template tab changes are non-behavioral |
+| 053 | `77e7f29` | fix chon top 1 khi select gia dinh | Non-behavioral: legacy query/migration implementation with no stated user outcome |
+| 054 | `5d533b8` | merge file template | Non-behavioral: merge commit with no independent diff |
+| 055 | `da54b72` | merge HiepBranch voi master version 3.3.2 | Mapped aggregate: CHG-036–CHG-044 |
+| 056 | `c0d4f08` | sua loi them giao dan khi dang filter bi exception, format va sua loi fill thong tin sai vi tri cua template lilichcanhan va XTRl | Mapped: CHG-032; new: HIST-014 |
+| 057 | `4f6a667` | - Cho phép in Số bí tích trong mẫu in Phiếu Gia đình bằng Word - Đổi mẫu in Phiếu Gia đình bằng Word sang A3 | Mapped: CHG-090; A3/Word choice is obsolete implementation pending report-layout review |
+| 058 | `89f415b` | update version for DB file | Non-behavioral: blank seed/schema release artifact; contents were not inspected |
+| 059 | `b1e4492` | In tat ca thanh vien trong gia dinh khi gia dinh nhieu hon 8 nguoi. | New: HIST-015 |
+| 060 | `0adf717` | cho phep reset avatar giao dan va gia dinh, gach bo nhung nguoi ngoai xu va khong thong ke | Mapped: CHG-023 and CHG-024 |
+| 061 | `6293b1e` | sua loi du su kien cua button | Mapped: CHG-022; duplicate UI event wiring has no independent modern rule |
+| 062 | `c2e7ef0` | Them button xem gia dinh trong form giao dan | Mapped: CHG-022 |
+| 063 | `da62088` | sap xep lai cac button o form giao dan | Non-behavioral: UI arrangement |
+| 064 | `c56ae44` | them gia dinh tu man hinh hon phoi | Mapped: CHG-025 |
+| 065 | `eddf527` | Sửa mẫu in phiếu gia đình Sửa lỗi khi giáo dân có hôn phối nhưng mục đã có gia đình không checked Sửa lỗi khi giáo dân qua đời thì bỏ mục đã có gia đình của người vợ/chồng Sửa lại cách hiển thị hình ảnh cho không bị méo hình. | Mapped: CHG-026, CHG-027, and CHG-034; new: HIST-016 |
+| 066 | `29aa49f` | in phieu gia dinh khi hon 8 nguoi thi se them dong voi template cot tuy y (khong co dinh so cot cua template) | New: HIST-015 |
+| 067 | `c3caece` | Remove unnecessary file | Non-behavioral: output cleanup |
+| 068 | `0ec0173` | First commit for installation package from version 3.3.3 | Non-behavioral: installer/update package |
+| 069 | `a0f50e9` | Release phiên bản 3.3.3 | Mapped aggregate: CHG-021–CHG-035; release metadata otherwise non-behavioral |
+| 070 | `7d4e236` | them gioi tinh vao template phieu gia dinh (2 mau excel va word) | New: HIST-017 |
+| 071 | `588bd3d` | sua loi import file MGC SyntaxError, thay doi cach load giao dan va gia dinh khi chon giao dan va gia dinh tu form bi tich chi tiet | Mapped: CHG-015; new: HIST-018 |
+| 072 | `95a41f5` | tim giao dan them 2 thuoc tinh ngay sinh va dia chi | Mapped: CHG-016 and CHG-057 |
+| 073 | `1b970ca` | sua loi khong chon duoc giao dan trong lop giao ly, cho phep chinh sua giao dan o man hinh bi tich chi tiet | New: HIST-019 |
+| 074 | `ca250b4` | thay the file giaoxu.mdb trong resource, Import MGC add giao dan khi khong tim thay giao dan trong hon phoi | New: HIST-020; seed replacement is a non-behavioral release artifact |
+| 075 | `c02d70e` | Không disable nút "In danh sách" trong màn hình thống kê. | Mapped: CHG-059 |
+| 076 | `b21699b` | Sửa lỗi không chọn giáo dân vào màn hình lớp giáo lý. Sửa giao diện màn hình chọn giáo dân. | New: HIST-019; picker layout is non-behavioral |
+| 077 | `67ed530` | Release version 3.3.4 | Mapped aggregate: CHG-012–CHG-020; release metadata otherwise non-behavioral |
+| 078 | `84c638d` | Add release package for 3.3.4 | Non-behavioral: installer/update package |
+| 079 | `88d74f9` | Sửa lỗi: không hiển thị tên vợ chồng trong màn hình thống kê hôn phối. | Mapped: CHG-011 |
+| 080 | `9299226` | add template KQRaoHonPhoi | New: HIST-021 |
+| 081 | `229bf9d` | them cot so nam hon phoi vao danh sach hon phoi | New: HIST-022 |
+| 082 | `b91db2e` | Sửa lỗi null object ref khi thay đổi giáo họ. Sửa lỗi duplicate key khi import vợ chồng. | New: HIST-023 and HIST-024 |
+| 083 | `3fc4973` | Sửa một số lỗi import ngày tháng và null exception | New: HIST-025; exact source cases remain to be profiled |
+| 084 | `77b65bf` | Thêm BT Xức dầu, GL Bao đồng, GL Hôn Nhân | Mapped: CHG-008; new: HIST-026 |
+| 085 | `0a7cbc2` | Thêm thông tin bao đồng. Thêm thông tin xức dầu. Và sửa một số lỗi. | Mapped: CHG-008 and HIST-026; unspecified fixes add no rule |
+| 086 | `1dff4eb` | cố gắng sử dụng nhiều loại connection string khi kết nối Excel data. Release 3.3.6 | Mapped: CHG-009; connection-string fallback is obsolete implementation |
+| 087 | `4b82d98` | thêm thông tin cập nhật | Non-behavioral: update/release information |
+| 088 | `dc8f159` | Add files via upload | Non-behavioral for rule register: report artifact without a stated behavior; retained for report inventory |
+| 089 | `0f876dc` | Add try catch to import function | Non-behavioral: implementation hardening without a stated recovery/user outcome |
+| 090 | `e4ba558` | Delete uncommitted files | Non-behavioral: repository cleanup |
+| 091 | `0b6e02c` | Merge branch 'master' of https://github.com/khoannd/qlgx | Non-behavioral: merge commit with no independent diff |
+| 092 | `ae8afff` | - Hiển thị thêm thông tin qua đời. - Hiển thị Tên Cha, Tên Mẹ, Ngày XTRL vào danh sách học sinh giáo lý | Mapped: CHG-001 and CHG-002 |
+| 093 | `a0ee88d` | Fix error when import data from MGC | Mapped: CHG-003 and CHG-015; subject does not identify another rule |
+| 094 | `9e68b8a` | Thêm thông tin tên người vợ/chồng vào mẫu in Lý lịch cá nhân | Mapped: CHG-005 |
+| 095 | `bf710fb` | Chỉnh sửa chức năng import dữ liệu từ phần mềm MGC để có thể import dữ liệu cho nhiều giáo xứ khác nhau trong cùng một file DataGx.accdb | Mapped: CHG-004 |
+| 096 | `e6b74cd` | Cho phép nhập ngày bí tích sau ngày hiện tại. Chỉ hiện cảnh báo khi lưu dữ liệu giáo dân. | Mapped: CHG-006 |
+| 097 | `985a85d` | Release version 3.3.7 | Mapped aggregate: CHG-001–CHG-007; seed/version update otherwise non-behavioral |
+| 098 | `215c218` | Release version 3.3.7 | Non-behavioral: installer/update package |
+| 099 | `360581d` | Release version 3.3.7 | Non-behavioral: release-help metadata; marks the reviewed history boundary |
+
 ## BUG-003 review contract
 
 For every `Rule — pending BUG-003` row, the domain reviewer must record:
@@ -181,3 +331,6 @@ changed rule keeps the original wording and adds the approved replacement.
 | Source versions/releases | 12 dated or named release sections represented |
 | Unclassified rows | 0 |
 | Current-policy decisions made by BUG-001 | 0; all behavioral rows remain pending BUG-003 |
+| Legacy commits reviewed by BUG-002 | 99 (`3d41697` through `360581d`) |
+| History-only rule candidates | 26 (`HIST-001` through `HIST-026`), all pending BUG-003 |
+| Unmapped legacy commits | 0; every commit is mapped to rule rows/aggregate rows or explicitly non-behavioral |
