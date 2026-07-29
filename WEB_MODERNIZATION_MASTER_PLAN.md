@@ -429,6 +429,56 @@ Every UI card in §11 is accepted against the flow map produced by `FLO-001`–`
 
 Modernization applies to *technology and ergonomics* — responsiveness, search, validation feedback, undo, offline — not to the shape of the work.
 
+### 3.4 Provisional people and household walkthrough scripts
+
+**FLO-001 status (2026-07-29): static draft complete; approval pending.** These scripts turn the LEG-002 catalog into observable tasks for a parish operator. They describe source-visible sequencing, not approved future behavior. Each must be performed on the supported Windows/x86 application using synthetic records, with field focus order, defaults, warnings, final persistence, and return navigation recorded.
+
+#### Entry points and source-visible defaults
+
+- `frmMain` opens active people, active households, archived people, archived households, person search, household search, and data-review lists as separate tabbed forms.
+- Active lists show a parish-section selector with an “all” option. They normally restore `Memory.CurrentGiaoHo`; a search result bypasses that default once through `DangTimKiemGiaDinhGiaoDan`.
+- Creating a person from a section-filtered list preselects that section. After a successful add, the legacy list immediately opens another blank person editor for rapid entry.
+- Creating a household from a section-filtered list passes that section to the editor.
+- The common command bar supplies F2 add, F3 delete, F4 edit, F6 save/update, and F11 close. Runtime observation must verify every screen actually receives those keys and what happens with unsaved edits.
+
+#### Walkthrough scripts
+
+| Script | Preconditions | Operator actions to observe | Source-visible result | Questions that block approval |
+|---|---|---|---|---|
+| PPL-01 Open and filter active people | At least two sections plus active, transferred, deceased, archived, and not-counted synthetic people | Open the people entry point; note initial section; choose another section and “all”; toggle the not-counted filter; sort/filter the grid; reopen the tab | List count updates; active/default predicates and status formatting come from `frmGiaoDanList` / `GxGiaoDanList`; remembered section affects initial load | Which statuses belong in “active” and “all”? Is the remembered section helpful or surprising? Which columns/filter operators are essential? |
+| PPL-02 Rapidly create people | A selected section and synthetic parent candidates | Press F2; traverse fields by keyboard; enter a valid person; save with F6; observe the next blank editor; cancel the second editor | Selected section is prefilled; successful save returns/imports the row and loops to another add form | Is repeated-entry mode intentional? Which values carry forward? Should save-and-new and save-and-close be separate commands? |
+| PPL-03 Validate and edit a person across tabs | Person with partial dates, parents, sacraments, marriage, vocation, and association history | Open with F4/double-click; visit every tab; make one valid and one invalid change in each relevant group; save, cancel, and close with dirty state | Editor validates identity/date/relationship rules and saves related vocation/association/marriage state through the person workflow | Does one F6 save every tab atomically? Which warning can be overridden, by whom, and what audit reason is required? |
+| PPL-04 Search and select a person | Similar names, archived match, partial birth date, and multiple sections | Search by name, birth date, address, and section; clear criteria; open a result; repeat from an embedded person picker | Search composes criteria and opens the people list; relationship pickers can include archived people | What matching mode, diacritic handling, result ordering, and archived-status label are expected? |
+| PPL-05 Archive, restore, and delete a person | Unreferenced person, household member, person with sacrament/class/history links | Press F3; exercise cancel, archive, and permanent-delete branches; open the archive list; attempt restore/edit and document generation | Legacy prompt maps Yes to hard delete, No to archive, Cancel to no-op; referenced household member blocks at least one hard-delete path | Is permanent deletion ever allowed? What restores a person, and which relationships/statuses return? Replace the ambiguous Yes/No prompt with explicit actions only after approval |
+| HOU-01 Create a household | Selected section; synthetic spouses and other members with known existing memberships | Press F2; traverse household fields; select husband/wife and head; add members/roles; save | Section is prefilled; spouse, membership, marriage, head, and duplicate checks run; aggregate rows are persisted | Are both spouses required? Can the head be neither spouse? What creates the household name/code by default? |
+| HOU-02 Change spouse, head, and membership | Existing household with spouse roles, child who later formed a household, deceased member, and historical membership | Replace a spouse; change head; add/remove/reorder members; attempt duplicate and cross-household membership; cancel and save | Legacy flow may rewrite old/new spouse roles and membership; warnings distinguish transferred/deleted/separately housed people | Which relationships are current versus historical? Must every automatic rewrite show a before/after preview? |
+| HOU-03 Change address, section, count, or transfer state | Household whose members include spouse, child, separately housed person, archived person, and transferred person | Change one aggregate field at a time; accept/decline each cascade prompt; mark transferred; inspect all member rows and histories | Legacy editor can propagate address, section, counted flag, and transfer state to a subset of members | Define the inclusion set and transaction boundary for each field; does declining mean household-only update or cancel the whole save? |
+| HOU-04 Archive, restore, and delete a household | Empty household, populated household, archived household, and members with other history | Press F3; exercise cancel/archive/permanent-delete; inspect active/archive lists and person-to-household navigation | Legacy hard delete removes household and membership rows; archive uses the shared delete/update query | Is hard delete ever permitted? Does restore reactivate memberships? How are duplicate/spouse rules evaluated against archived households? |
+| REV-01 Review anomalies without mutation | Synthetic cases for invalid date order, parent/child age gap, duplicate spouse roles, missing household, and multiple active households | Run person and household review entry points; filter/open each finding; correct one case and rerun | `ReviewGiaoDanProcess` / `ReviewGiaDinhProcess` produce operator-facing anomaly lists | Which findings are errors, warnings, or accepted exceptions? The replacement review must never auto-repair without an explicit approved command |
+
+#### Field-group and focus-order snapshot
+
+The Designer files establish grouping and `TabIndex`, but nested containers reuse indices. The sequence below is a review aid, not proof of actual Tab-key focus order.
+
+| Editor | Source-visible group order | Fields whose exact order/default must be recorded at runtime |
+|---|---|---|
+| Person — `Cá nhân` tab | Identity → baptism / First Communion → confirmation / anointing → transfer → other information | Saint name, person code, section, parish/diocese display, sex, birth, birthplace, father, mother, civil id, not-counted flag, photo; sacrament date/register/minister/sponsor/place; transfer type/date/place/note; education, specialty, study, ethnicity, occupation, address/contact, family/death/burial flags and notes |
+| Person — remaining tabs | `Giáo lý` → `Hôn phối` → `Ơn gọi tận hiến` → `Hội đoàn` | Catechism milestones; marriage list/editor; vocation milestones/status/contact; association history/role/interval |
+| Household | Household identity and spouses/head → status/contact/address → transfer/count/photo/marriage → other-member grid | Household code, husband/head, wife/head, name, section, household-book number, category, phone, address, notes, transferred/date/place, not-counted, photo, marriage reference, member/role/order |
+
+#### Observation record and approval
+
+For every script capture:
+
+1. legacy version, synthetic fixture id, operator role, entry point, and initial remembered section;
+2. visible field/group order, actual Tab sequence, default values, enabled/hidden controls, and function-key behavior;
+3. every validation message and whether it blocks, warns with override, or offers a side effect;
+4. rows created/updated/archived plus all related status, membership, marriage, transfer, and audit effects;
+5. return destination, selected row, filter persistence, dirty-close behavior, and error recovery;
+6. domain-expert decision: preserve, deliberately change, or retire, with rationale and approver.
+
+FLO-001 closes only when the expert completes all ten scripts, LEG-002 questions are resolved, each behavior has an approved expected result, and deviations are linked from the future `flow-deviations.md`. Until then, downstream UI cards may use this section for discovery but not as signed-off acceptance.
+
 ## 4. Locked Architecture Decisions
 
 These decisions are made now because they are expensive to reverse. An implementer may not change them without an explicit decision record.
@@ -896,7 +946,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | [x] BUG-002 | M | BUG-001 | Mine 99 git commits for fixes not in the changelog; merge into the register | All commits through legacy release `360581d` have one ledger row; 26 history-only rule candidates were added and every other commit maps to recorded rules/aggregates or an explicit non-behavioral classification |
 | [ ] BUG-003 | M | BUG-001 | Domain expert reviews the register; mark each rule still-required / changed / obsolete | No rule enters implementation unreviewed |
 | [ ] BUG-004 | M | BUG-003 | Convert every still-required rule into a named failing characterization test in `packages/domain` | Test ids referenced from the register; suite red until its module is built |
-| [ ] FLO-001 | M | LEG-002 | Map people and household flows: screen sequence, field order, keyboard path, defaults, validation timing | Domain expert walks the map and confirms it matches their day |
+| [ ] FLO-001 | M | LEG-002 | Provisional people/household map in §3.4: 10 walkthrough scripts, entry-point/default notes, field-group snapshot, and observation record | Static draft complete; blocked on Windows runtime capture and domain-expert walkthrough/approval of every script |
 | [ ] FLO-002 | M | LEG-003, LEG-004 | Map sacrament, marriage, bann, and transfer flows | Same |
 | [ ] FLO-003 | S | LEG-005, LEG-006 | Map catechism, association, vocation, statistics, import flows; record the 30 `frmMain` entry points as a route map | Every entry point has a target route |
 | [ ] FLO-004 | S | FLO-001–003 | Record the §2.7 shortcut table and browser conflicts in `docs/architecture/keyboard-map.md` | Every legacy key has a web binding or a documented substitute |
