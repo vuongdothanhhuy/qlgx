@@ -725,7 +725,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | Card | Size | Depends | Deliverable | Evidence |
 |---|---:|---|---|---|
 | [x] SEC-001 | XS | — | Root `.gitignore` for `.env`, `.env.*` except `.env.example`, secrets, `.mdb`/`.accdb`, extracted data, photos, generated output, and restricted work dirs | Commit `77f85ed`; `git check-ignore --no-index` recognizes a synthetic path for every forbidden class and does not ignore `.env.example` |
-| [ ] SEC-002 | S | SEC-001 | `docs/architecture/security-boundary.md`: staged/history secret procedure; record the Access credential as accepted permanent exposure per §8.1 | Synthetic secret detected; rationale recorded |
+| [x] SEC-002 | S | SEC-001 | `docs/architecture/security-boundary.md`: staged/history secret procedure; record the Access credential as accepted permanent exposure per §8.1 | No-output scan detected an ignored synthetic secret; full legacy-history scan produced the expected hit; permanent-exposure rationale recorded without reproducing the value |
 | [ ] SEC-003 | S | SEC-002 | `docs/architecture/legacy-network-inventory.md` covering `sendGiaoXuInfo`, updater, feedback | Each endpoint has a retire decision |
 | [ ] LEG-001 | S | — | `docs/architecture/legacy-baseline.md`: projects, entry points, dependencies | Every solution project classified |
 | [ ] LEG-002 | M | LEG-001 | Catalog people/household forms, validation, SQL | Domain expert reviews the list |
