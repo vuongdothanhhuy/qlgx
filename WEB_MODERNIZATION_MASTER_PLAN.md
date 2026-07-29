@@ -44,6 +44,8 @@ Without real rows there is no encoding classification (DBI-003), no date-precisi
 
 If a live parish copy genuinely cannot be obtained, that is a **stop-and-replan** condition, not something to work around with the seed file.
 
+A temporary delay is different. While access is being arranged, execute the bounded pre-data sprint in §0.4. It prepares repository-derived evidence and the secure intake path, but it does not relax any real-data gate or move the Phase 1 start date forward.
+
 ### 0.2 Pilot parish and diocese — required before RPI-001
 
 Determines which diocese override templates enter scope (§7.1) and whose workflows are authoritative when practice differs.
@@ -51,6 +53,63 @@ Determines which diocese override templates enter scope (§7.1) and whose workfl
 ### 0.3 Named domain expert — required before Gate 0
 
 A parish secretary or administrator who does this work daily. Four hours per week, eight during sacrament and marriage discovery. Without a named person with reserved time, the characterization cards produce guesses that look like specifications.
+
+### 0.4 Pre-data sprint — useful work while the real `.mdb` is delayed
+
+This is a **maximum ten-working-day preparation window**, not a substitute for the §0 prerequisites. It uses only repository evidence: solution and project files, legacy source, `VersionConfig.xml`, git history, the blank schema seed, and the checked-in report templates. The sprint ends sooner if the real data package arrives.
+
+This section is an execution queue for after the repository leaves its current planning-only phase. While that restriction remains active, no card below is executed and no artifact other than this master plan is created or changed.
+
+**Security checkpoint resolved (2026-07-29):** commit `77f85ed` adds the root and JetBrains ignore rules. `git check-ignore --no-index` now confirms that `.env`, `.env.*`, Access files, restricted data/install directories, migration work, photos, generated output, Node/Angular artifacts, and project-local C# build output are ignored. `.env.example`, `.idea/.gitignore`, root `BIN/`, and root `Release/` remain visible. SEC-001 is complete.
+
+The preparation work is sliced from existing Phase 0 cards, so it adds no backlog IDs and no engineer-day estimate. A card may be closed only when its existing evidence column is satisfied. Where the evidence requires real rows, the pilot parish, or domain-expert approval, the output remains visibly marked `PROVISIONAL`.
+
+| Sequence | Existing cards | Work permitted before real data | Evidence prepared now | Completion boundary |
+|---:|---|---|---|---|
+| 1 | SEC-001–003 | Define ignore coverage, restricted-data handling, secret checks, and retirement decisions for legacy network behavior | Synthetic ignore/secret cases; repository endpoint inventory; data-intake checklist naming `.mdb`, photos, `CauHinh`, deployed templates, provenance, checksum, owner, retention, and deletion date | These cards may close without production data if their evidence checks pass; never record the Access password in an artifact |
+| 2 | LEG-001 | Classify every solution project, entry point, runtime dependency, generated area, and bundled sample/third-party area | Reviewed repository-only baseline with exact paths | May close after peer review because its source of truth is the repository |
+| 3 | LEG-002–006 | Build static catalogs of forms, commands, SQL, validation branches, global-state reads, report calls, and navigation entry points | Per-module inventory with a source path and symbol for every claim; unanswered behavior questions listed separately | Keep `PROVISIONAL`; code shows possible paths, not which paths the parish uses or what staff intend |
+| 4 | BUG-001–002 | Translate the 116 `Source/ChuongTrinh/VersionConfig.xml` entries and mine behavioral fixes from git history | One traceable row per changelog entry and relevant commit; duplicates linked, not discarded | BUG-001/002 may close after traceability review; no row becomes “still required” until BUG-003 domain review |
+| 5 | FLO-001–004 | Draft screen sequences, field order, defaults, validation timing, shortcuts, and the `Source/ChuongTrinh/frmMain.cs` route map from static evidence | Flow diagrams or tables with source links and explicit observation questions | Keep `PROVISIONAL`; only a domain-expert walkthrough can approve the flow or resolve intent |
+| 6 | RPI-001–003 preparation | Inventory all 63 files under `BIN/Template/`, group variants by logical report, and record inspectable paper/font/field/signature properties | Candidate catalog with checksums, folder, format, logical report name, duplicate/variant relationship, and inspection limitations | Do not close RPI-001 until the pilot diocese defines the in-scope set; do not close RPI-002/003 without deployed-template comparison and approval |
+| 7 | DBI-001 preparation | Extract a **schema hypothesis only** from `Source/ChuongTrinh/Resources/giaoxu.mdb` and reconcile it with `GxConstants.cs`, `UpdateProcess.cs`, and SQL references | Candidate table/column/type/index list plus a “verify against live file” column | Do not close DBI-001; the blank seed may be older than or differ from the live installation |
+| 8 | DBI-002–005 preparation | Finalize profiler questions, neutral output contracts, redaction rules, and synthetic edge-case designs | Executable-check specification for null/blank/range, encoding class, date precision, and photo paths | Do not run against invented rows and do not close any DBI-002–005 card |
+
+#### Pre-data sprint task order
+
+Each step must be independently reviewable. Do not bundle several unfinished catalogs into one large draft.
+
+1. **Day 1 — secure intake plan.** Specify who may copy and access the package, where the restricted working copy lives, how its checksum and provenance are recorded, how photos and deployed templates remain associated with the `.mdb`, and when every copy is deleted. Include a dry run using fake filenames and a synthetic secret only.
+2. **Day 2 — repository baseline.** Finish the LEG-001 evidence map. Record file encodings and the command required to read UTF-16 source so later inventory work does not silently omit files.
+3. **Days 3–4 — rule register.** Complete BUG-001 before BUG-002. Preserve the original Vietnamese text, add an English explanation, cite the version or commit, name the affected module, and leave the current-policy decision for BUG-003.
+4. **Days 5–6 — static module catalogs.** Draft LEG-002–006 in separate module slices. For each behavior record the form or class, trigger, inputs, validation, SQL or helper call, state mutation, output/report, and unresolved question.
+5. **Days 7–8 — flow drafts.** Turn the catalogs into FLO-001–004 walkthrough scripts. Questions must be answerable by observing or interviewing a parish operator; avoid questions that ask them to design the replacement.
+6. **Day 9 — report candidates.** Catalog every checked-in template and identify exact duplicates versus diocesan/layout variants. Record that the deployed folder is authoritative when it arrives.
+7. **Day 10 — readiness review.** Check traceability, split oversized follow-up work, assemble the domain-expert interview agenda, and publish a blocked/ready table. Do not pass Gate 0.
+
+#### Claims forbidden before data arrival
+
+- Do not infer field nullability, encoding frequency, date precision, orphan counts, duplicate rates, configured settings, or photo availability from the blank seed.
+- Do not promote a schema hypothesis into PostgreSQL migrations or domain types.
+- Do not create “representative” fixtures by guessing what production records look like.
+- Do not choose final report scope from the repository folders alone.
+- Do not mark a flow approved because it matches source code; legacy code can encode obsolete behavior or a historical defect.
+- Do not scaffold the application, importer, sync layer, domain kernel, or report renderer merely to keep engineering busy. Those choices become expensive to undo when real evidence arrives.
+
+#### Data-arrival handoff
+
+Call the day the complete restricted package is accepted **Data Day D0**. The package is complete only when the `.mdb`, referenced photo tree, configured `CauHinh` values, deployed `Template/` folder, provenance, and named custodian are present.
+
+| Target | Action | Exit evidence |
+|---|---|---|
+| D0 | Verify authorization, package completeness, checksum, read-only source handling, access list, retention date, and deletion owner | Intake record complete; no production artifact enters git, screenshots, fixtures, or AI/tool consultations |
+| D0–D1 | Run DBI-001 against the live file and compare it with the seed hypothesis | Every schema difference classified; DBI-001 evidence passes |
+| D1–D2 | Run DBI-002, then DBI-003–005 against the restricted copy | Sanitized aggregate summary produced; ambiguous encodings/dates and missing photos counted without exposing records |
+| D2–D3 | Create only synthetic or irreversibly sanitized corpora from the observed **classes**, then have a second person review re-identification risk | PDT-001/encoding fixture inputs contain no parish or person data |
+| D3–D4 | Reconcile provisional LEG/FLO/RPI work with observed configuration, deployed templates, and the first domain-expert session | Differences recorded; drafts remain provisional until their backlog evidence passes |
+| D5 | Re-estimate affected cards and hold Gate 0 readiness review | Blocked cards, changed assumptions, owners, and next dates recorded; Gate 0 passes only if every §10 condition is met |
+
+If the package has no credible delivery date when the ten-day sprint ends, pause application work. Decide whether to keep pursuing the parish data, reduce the project to a repository-characterization exercise, or formally re-plan a new product that makes no migration/parity promise.
 
 ---
 
@@ -665,7 +724,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 
 | Card | Size | Depends | Deliverable | Evidence |
 |---|---:|---|---|---|
-| [ ] SEC-001 | XS | — | `.gitignore` for secrets, `.mdb`, extracted data, photos, generated output, work dirs | `git check-ignore` recognizes each pattern |
+| [x] SEC-001 | XS | — | Root `.gitignore` for `.env`, `.env.*` except `.env.example`, secrets, `.mdb`/`.accdb`, extracted data, photos, generated output, and restricted work dirs | Commit `77f85ed`; `git check-ignore --no-index` recognizes a synthetic path for every forbidden class and does not ignore `.env.example` |
 | [ ] SEC-002 | S | SEC-001 | `docs/architecture/security-boundary.md`: staged/history secret procedure; record the Access credential as accepted permanent exposure per §8.1 | Synthetic secret detected; rationale recorded |
 | [ ] SEC-003 | S | SEC-002 | `docs/architecture/legacy-network-inventory.md` covering `sendGiaoXuInfo`, updater, feedback | Each endpoint has a retire decision |
 | [ ] LEG-001 | S | — | `docs/architecture/legacy-baseline.md`: projects, entry points, dependencies | Every solution project classified |
@@ -956,7 +1015,12 @@ These cards implement §4.4. Gate 1 does not pass until SYN-010 is green.
 ### 11.14 Execution order
 
 ```text
-§0 prerequisites: real .mdb + photos, pilot parish, named domain expert
+Temporary .mdb delay
+  -> bounded §0.4 pre-data sprint
+  -> pause at its stop line if the package still has no credible delivery date
+
+§0 prerequisites: real .mdb + photos, deployed configuration/templates,
+                 pilot parish, named domain expert
   -> SEC/LEG/DBI/RPI + BUG/FLO   (Phase 0, importer starts here)
   -> PLT + DAT -> ORG-001/ROW-001/AUD/IDN
   -> SYN-001..014                <-- Gate 1 blocks on SYN-010
@@ -968,12 +1032,13 @@ These cards implement §4.4. Gate 1 does not pass until SYN-010 is green.
   -> OPS/PRV/UAT -> CUT/STB
 ```
 
-Four rules on ordering:
+Five rules on ordering:
 
-1. **Sync before features.** Every feature module writes through the SYN-002 helper. Building modules first means rewriting every write path.
-2. **The importer tracks the schema.** Each `MIG-0xx` load card lands in the same phase as the schema it loads, not at the end. MIG-021 keeps it honest in CI.
-3. **Rules and flows before UI.** `BUG-004` characterization tests and the `FLO-00x` flow map exist before the module they describe. A UI card whose flow map is missing is blocked, not guessed.
-4. **The export round trip starts early.** `DAT-001`–`DAT-003` land in Phase 1 with only two tables, then grow with the schema. Retrofitting a complete export at the end is how exports end up incomplete.
+1. **Pre-data work has a stop line.** Static characterization prepares questions and traceability; it does not authorize foundation or feature construction and cannot pass Gate 0.
+2. **Sync before features.** Every feature module writes through the SYN-002 helper. Building modules first means rewriting every write path.
+3. **The importer tracks the schema.** Each `MIG-0xx` load card lands in the same phase as the schema it loads, not at the end. MIG-021 keeps it honest in CI.
+4. **Rules and flows before UI.** `BUG-004` characterization tests and the `FLO-00x` flow map exist before the module they describe. A UI card whose flow map is missing is blocked, not guessed.
+5. **The export round trip starts early.** `DAT-001`–`DAT-003` land in Phase 1 with only two tables, then grow with the schema. Retrofitting a complete export at the end is how exports end up incomplete.
 
 ## 12. Test and Verification Matrix
 
@@ -1004,7 +1069,7 @@ CI runs unit and static checks on every change, PostgreSQL integration tests and
 | Risk | Probability / impact | Mitigation and trigger |
 |---|---|---|
 | Offline sync is harder than estimated | High / Critical | Gate 1 blocks on SYN-010 before any feature work; if convergence is not proven in Phase 1, cut offline writes to offline-read-only and re-plan |
-| No real parish `.mdb` is obtainable | Medium / Critical | §0.1 is a stop-and-replan condition, not a workaround; the blank seed cannot substitute |
+| No real parish `.mdb` is obtainable | Medium / Critical | Use the bounded §0.4 sprint for a temporary delay; if no credible delivery date exists at its stop line, §0.1 requires a pause and re-plan because the blank seed cannot substitute |
 | 15 years of recorded fixes are ignored | Medium / Critical | BUG-001–004 run in Phase 0; a module cannot start until its register rows are reviewed |
 | Users reject the new UI as unfamiliar | Medium / High | §3.3 flow fidelity; FLO maps gate UI acceptance; deviations require written approval |
 | Future lock-in to Angular/NestJS/a cloud vendor | Low / Critical | §4.6 disqualifying properties; the DAT-003 round trip is the standing proof |
@@ -1033,17 +1098,19 @@ Each has a deadline and a default, so none blocks a start.
 
 ## 15. First 30 Days
 
-**Week 0 (start here)** — request the §0.1 data package: real `giaoxu.mdb`, the full install directory with photos, `CauHinh` contents, and the deployed `Template/` folder. Agree restricted-storage handling in writing. Confirm the §0.2 pilot parish and the §0.3 domain expert with reserved hours. Everything below assumes this arrives; if it slips, weeks 2–4 slip with it.
+The 30-day clock for implementation is anchored to **Data Day D0**, not to the first repository edit. Before D0, run only the bounded §0.4 sprint. A delayed data package delays the Phase 1 date; it does not create permission to build around missing evidence.
 
-**Week 1** — `.gitignore` and secret boundary (SEC-001–003); freeze stack majors and write the first decision records, including §4.6 longevity; LEG-001; begin BUG-001 (translate the 116 changelog entries — it is slower than it looks and needs the domain expert).
+**Before D0 (maximum ten working days)** — execute §0.4 in order. Request the complete §0.1 package, agree restricted-storage handling, confirm the §0.2 pilot parish and deployed diocese templates, and reserve the §0.3 domain expert's hours. Finish repository-only evidence and provisional drafts. At the stop line, pause if the package still has no credible date.
 
-**Week 2** — real data arrives. LEG-002–006 inventories; DBI-001–005 profiling with encoding classification (DBI-003) treated as a first-class result; FLO-001 people and household flow map with the domain expert at the desk, watching them work.
+**D0–D4 (secure intake and profiling)** — follow the §0.4 handoff. Complete DBI-001–005 in dependency order, produce only sanitized aggregate outputs, compare the live schema to the seed hypothesis, and reconcile the photo/configuration/template package. No production values enter source control or AI/tool consultations.
 
-**Week 3** — scaffold the monorepo, CI, and local PostgreSQL (PLT-001–010); write MIG-001–002 so extraction runs against the real copy this week; RPI-001–003 report catalog and prototype selection; BUG-002–003 review.
+**D5–D9 (characterization approval)** — finish LEG-002–006 with observed examples; conduct the first domain-expert walkthrough; complete BUG-003 and revise the provisional FLO-001–004 drafts; finalize RPI-001–003 against the deployed templates and actual diocese. Hold Gate 0. Record every unmet condition rather than granting a conditional pass.
 
-**Week 4** — spike the sync protocol end to end (SYN-001–005 minimum) and the partial-date kernel (PDT-001–003); DAT-001–003 export round trip on the two tables that exist; render one representative PDF in a pinned container; hold the Gate 0 review.
+**D10–D19 (foundation begins)** — only after Gate 0 passes, start PLT-001–010 in dependency order and establish the smallest PostgreSQL, CI, and package foundation needed by later risk spikes. Start MIG-001–003 against the now-verified extraction contract. Carry unfinished foundation cards forward; ten working days is a sequencing target, not permission to skip evidence.
 
-**Do not begin feature construction** if the real data package, encoding classification, rule register, flow maps, report feasibility, or the sync spike remain unproven.
+**D20–D29 (risk spikes begin)** — target SYN-001–005, PDT-001–003, the first two-table DAT-001–003 round trip, and one representative PDF in a pinned environment. Gate 1 remains open until the complete foundation and SYN-010 offline-convergence proof pass. Re-estimate before continuing if any spike breaks an architecture assumption.
+
+**Do not begin feature construction** if the real data package, encoding classification, reviewed rule register, approved flow maps, report feasibility, or offline convergence proof remains incomplete.
 
 ## 16. Definition of Done
 
