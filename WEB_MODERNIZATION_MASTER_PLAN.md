@@ -160,17 +160,17 @@ SQL, validation, transactions, UI behavior, and reporting are mixed throughout: 
 
 ### 2.3 Database
 
-`giaoxu.mdb`, Jet/ACE, password-protected with a credential hardcoded in `Source/DBAccess/GxConstants.cs`. A blank seed copy is embedded at `Source/ChuongTrinh/Resources/giaoxu.mdb` and extracted on first run.
+`giaoxu.mdb`, Jet/ACE, password-protected with a credential hardcoded in `Source/DBAccess/GxConstants.cs`. A blank seed copy is embedded at `Source/ChuongTrinh/Resources/giaoxu.mdb` and extracted on first run. The embedded seed and the current source are different snapshots; §2.11 records the differences that must be reconciled against a deployed database.
 
-Tables with declared constants in `GxConstants.cs`:
+Canonical table candidates established by source references and the embedded seed:
 
-**Domain tables (import these):** `GiaoPhan`, `GiaoHat`, `GiaoXu`, `GiaoHo`, `LinhMuc`, `GiaoDan`, `GiaDinh`, `ThanhVienGiaDinh`, `DotBiTich`, `BiTichChiTiet`, `HonPhoi`, `GiaoDanHonPhoi`, `RaoHonPhoi`, `ChuyenXu`, `HoiDoan`, `ChiTietHoiDoan`, `TanHien`, `TaiKhoan`, `CauHinh`, `DuLieuChung`, `GiaoXuNhan`.
+**Domain/configuration tables (classify these for import):** `GiaoPhan`, `GiaoHat`, `GiaoXu`, `GiaoHo`, `LinhMuc`, `GiaoDan`, `GiaDinh`, `ThanhVienGiaDinh`, `VaiTro`, `DotBiTich`, `BiTichChiTiet`, `HonPhoi`, `GiaoDanHonPhoi`, `RaoHonPhoi`, `ChuyenXu`, `HoiDoan`, `ChiTietHoiDoan`, `TanHien`, `TaiKhoan`, `TenLoaiTaiKhoan`, `CauHinh`, `DuLieuChung`.
 
-**Catechism tables (referenced in SQL, not in `GxConstants`):** `ChiTietLopGiaoLy`, `GiaoLyVien`, plus `KhoiGiaoLy` and `LopGiaoLy`.
+**Catechism tables:** `ChiTietLopGiaoLy`, `GiaoLyVien`, `KhoiGiaoLy`, `LopGiaoLy`.
 
-**Do not import — report scratch space:** `ReportGiaoDan`, `ReportHonPhoi`, `ReportRaoHonPhoi`, `ReportBiTich`, `ReportChungNhanHP`, `ReportSoGiaDinh`, `RaoHonPhoiTMP`. These are populated during report generation and hold no canonical data.
+**Do not import — transient structures:** `GiaoXuNhan` is an in-memory recipient `DataTable` assembled by `frmReport`, not a table in the seed. `ReportGiaoDan`, `ReportHonPhoi`, `ReportRaoHonPhoi`, `ReportBiTich`, `ReportChungNhanHP`, `ReportSoGiaDinh`, and `RaoHonPhoiTMP` are report scratch structures; `RaoHonPhoiTMP` is explicitly created and dropped at runtime.
 
-**Correction to earlier drafts:** `VaiTro` is **not a table**. It is an integer column on `ThanhVienGiaDinh` with three hardcoded values in `GxConstants.cs`: `VAITRO_CHONG = 0`, `VAITRO_VO = 1`, `VAITRO_CON = 2`. There is no relationship-type lookup table to migrate; the target enum is authored, not imported.
+**Correction to earlier drafts:** `VaiTro` is both an integer column on `ThanhVienGiaDinh` and a physical two-column lookup table in the seed. SQL joins the table, while current UI/report code obtains 22 relationship ids from the hardcoded `CMemory.GetQuanHeList` dictionary. Neither source is authoritative until the deployed table values and actually used ids are profiled. The target relationship types are reviewed reference data, not an enum inferred from only husband/wife/child.
 
 The `GiaoDan` table combines identity, contact, status, family, and sacramental attributes. This denormalization is not copied forward.
 
@@ -388,6 +388,44 @@ The source also calls many other `SELECT_*` names without recreating them. There
 4. Resolve every “Decision required” item above, with special written decisions for parish-section cascade deletion, membership hard deletion, empty-vocation deletion, catechism promotion semantics, and interrupted import.
 5. Reconcile observed rows and query shapes with DBI-001–004 after the real data package arrives. Preserve partial-date and encoding classes without copying production values.
 6. Reference the approved example ids from LEG-005, FLO-003, and the corresponding ORG/CLG/ASC/VOC/CAT cards. Only then mark LEG-005 complete.
+
+### 2.11 Embedded-seed schema hypothesis (DBI-001 preparation)
+
+This is a schema-only inspection of `Source/ChuongTrinh/Resources/giaoxu.mdb` from 2026-07-29. No rows or default values were read. The JET4 seed hash is `ea5b15749d346466740a13da70974a0900258d201301def4866fb0ac43b9d5f3`. It contains 26 physical tables, 252 fields, 26 primary-key declarations, six secondary non-unique indexes, and four saved queries. MDB Tools reported no `MSysRelationships`, so the seed provides no trustworthy foreign-key metadata; logical relationships must be inferred provisionally and verified in the deployed file.
+
+| Area | Seed tables (`field count`; primary key) |
+|---|---|
+| Organization and clergy | `GiaoPhan` (4; `MaGiaoPhan`), `GiaoHat` (5; `MaGiaoHat`), `GiaoXu` (11; `MaGiaoXu`), `GiaoHo` (6; `MaGiaoHo`), `LinhMuc` (12; `MaLinhMuc`) |
+| People and households | `GiaoDan` (63; `MaGiaoDan`), `GiaDinh` (17; `MaGiaDinh`), `ThanhVienGiaDinh` (4; `MaGiaDinh` + `MaGiaoDan`), `VaiTro` (2; `ID`) |
+| Sacraments | `DotBiTich` (7; `MaDotBiTich`), `BiTichChiTiet` (4; `MaDotBiTich` + `MaGiaoDan`) |
+| Marriage and transfers | `HonPhoi` (12; `MaHonPhoi`), `GiaoDanHonPhoi` (3; `MaGiaoDan` + `MaHonPhoi`), `RaoHonPhoi` (26; `MaRaoHonPhoi`), `ChuyenXu` (7; `MaChuyenXu`) |
+| Associations and vocations | `HoiDoan` (6; `MaHoiDoan`), `ChiTietHoiDoan` (6; `ID`), `TanHien` (20; `MaTanHien`) |
+| Catechism | `KhoiGiaoLy` (4; `MaKhoi`), `LopGiaoLy` (6; `MaLop`), `ChiTietLopGiaoLy` (5; `MaLop` + `MaGiaoDan`), `GiaoLyVien` (2; `MaLop` + `MaGiaoDan`) |
+| Identity, configuration, reference | `TaiKhoan` (9; `TenTaiKhoan`), `TenLoaiTaiKhoan` (2; `ID`), `CauHinh` (4; `MaCauHinh`), `DuLieuChung` (5; `ID`) |
+
+The extracted type distribution is 52 integers, one autonumber/serial, 15 booleans, six long-text fields, 11 timestamps, 30 `VARCHAR(10)`, 14 `VARCHAR(50)`, nine `VARCHAR(100)`, and 114 `VARCHAR(255)`. Only 17 of 252 fields are marked required by the extracted schema. The 30 ten-character strings are a high-priority date-hazard set, but the name/length alone does not prove that every value is a date.
+
+The six secondary indexes are on `ChuyenXu.MaGiaoDan`, `GiaoHat.MaGiaoHat`, `GiaoHat.MaGiaoPhan`, `GiaoPhan.MaGiaoPhan`, `ThanhVienGiaDinh.MaGiaoDan`, and `GiaoXu.MaGiaoHat`. The two indexes that repeat a table's primary-key column may be historical redundancy. The absence of secondary indexes on many obvious relationship columns is recorded as a performance and integrity hypothesis, not permission to invent constraints before profiling duplicates and orphans.
+
+The seed exposes these saved queries:
+
+| Query | Static purpose | Seed-specific caution |
+|---|---|---|
+| `SELECT_GIADINH_LIST` | Household projection with spouse names/status and eligible-member count | Definition contains nested status and transfer rules and is known to be replaced by upgrades |
+| `SELECT_HONPHOI_LIST_1` | Inner marriage participant projection | MDB Tools cannot fully reconstruct its nested/crosstab source; compare the native Access definition |
+| `SELECT_HONPHOI_LIST` | Outer marriage list with derived age and participant context | Seed definition differs from some source-created versions |
+| `SELECT_VO_CHONG` | Husband/wife household projection | Present in the seed although current source does not recreate it |
+
+Static reconciliation changes four earlier assumptions:
+
+1. `VaiTro` physically exists in the seed and is referenced by saved-query SQL; its two columns do not make its rows authoritative.
+2. Current code hardcodes 22 relationship ids, not only husband/wife/child. DBI-002 must profile live `VaiTro` rows and distinct `ThanhVienGiaDinh.VaiTro` values before the target reference set is approved.
+3. `GiaoXuNhan` is not a physical seed table; current report code creates it in memory for recipient data.
+4. None of the named report scratch tables is present in the seed. This is consistent with runtime creation/temporary use, but the deployed inventory must still classify any physical `Report*` or `RaoHonPhoiTMP` object it finds.
+
+To finish DBI-001, run the same no-row extraction on a restricted read-only copy of the pilot database; capture file hash, Jet/ACE version, table/query names, columns, required/default/autonumber properties, primary/unique/secondary indexes, and relationships. Compare by object and field rather than trusting counts. Every seed-only, live-only, type-changed, length-changed, key-changed, or query-definition difference receives a disposition: canonical, upgrade residue, temporary, locally customized, or unknown. Do not read or export rows during DBI-001.
+
+**DBI-001 status (2026-07-29): embedded-seed hypothesis complete; task remains open.** The seed proves the extraction method and exposes plan drift, but it cannot establish the schema of a parish database upgraded over many releases. Close only after the live schema comparison is complete and §2.3 is reconciled without unresolved objects.
 
 ## 3. Scope
 
@@ -888,7 +926,7 @@ Normalize the wide `GiaoDan` row into:
 - `households`, `household_memberships` — membership and relationship role with effective dates.
 - Domain-owned tables for sacraments, marriages, associations, vocations, catechism.
 
-`household_relationship_types` is an **authored** enum seeded from the three legacy constants (`VAITRO_CHONG`, `VAITRO_VO`, `VAITRO_CON`), extended as the domain expert requires. It is not imported.
+`household_relationship_types` is reviewed reference data seeded from the deployed `VaiTro` table, distinct relationship ids actually used by `ThanhVienGiaDinh`, and the 22-id `CMemory.GetQuanHeList` code set. Seed rows are not trusted blindly; unknown or conflicting ids remain in staging until the domain expert maps them. The target keeps stable codes and labels rather than reducing the relationship model to husband/wife/child.
 
 Duplicate merging is never automatic. Detection proposes candidates from normalized Vietnamese names, partial dates, household, and identifiers; a user confirms every merge with a reason. Both legacy keys survive.
 
@@ -910,11 +948,11 @@ A starting contract. Every field requires validation against real data before it
 | `GiaoHat` | Organization | `deaneries` |
 | `GiaoXu` | Organization | `parishes` |
 | `GiaoHo` | Organization | `parish_sections` |
-| `GiaoXuNhan` | Organization | parish display/label settings, folded into `parish_settings` |
+| `GiaoXuNhan` in-memory report table | — | **not imported**; recipient parish/diocese values become typed report request fields |
 | `LinhMuc` | Clergy | `clergy_profiles`, `clergy_assignments` |
 | `GiaoDan` | People | `people`, `person_contacts`, `person_identifiers`, `person_status_history` |
 | `GiaDinh` | Households | `households`, household addresses |
-| `ThanhVienGiaDinh` | Households | `household_memberships`; `VaiTro` int → authored `household_relationship_types` |
+| `ThanhVienGiaDinh`, `VaiTro` | Households | `household_memberships`; reviewed relationship ids/labels → `household_relationship_types` |
 | `DotBiTich` | Sacraments | `sacrament_batches` |
 | `BiTichChiTiet` | Sacraments | `sacrament_records`, participants, sponsors |
 | `HonPhoi` | Marriage | `marriages` |
@@ -1223,7 +1261,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | [ ] LEG-004 | M | LEG-001 | Static catalog in §2.9: 12 compiled surfaces, 17 validation/side-effect rules, 8 SQL-intent families, and 3 source-created saved-query hypotheses | Repository review packet complete; blocked on schema-only extraction from the real `.mdb`, one named purpose and synthetic fixture per deployed saved query, and domain-expert approval |
 | [ ] LEG-005 | M | LEG-001 | Static catalog in §2.10: 13 compiled surfaces, 25 validation/side-effect rules, and 8 data/query-intent families | Repository review packet complete; blocked on Windows runtime observation, one domain-expert-approved acceptance example per module, and resolution of the destructive/ambiguous behaviors listed in §2.10 |
 | [x] LEG-006 | S | LEG-001 | Catalog imports, merge, backup, statistics (`frmThongKeChung`) in `docs/architecture/legacy-operations-inventory.md` | 33 import/merge/backup/statistics command rows reconcile to compiled entry points and each has an explicit preserve / replace / retire decision |
-| [ ] DBI-001 | S | SEC-001 | Schema-only Access inventory into restricted work storage | Table, key, index, and type list reconciles with §2.3 |
+| [ ] DBI-001 | S | SEC-001 | Finalize the §2.11 embedded-seed schema hypothesis against a restricted pilot copy | Live table/query, field, key, index, relationship, and type inventory reconciles with §2.3 without reading rows |
 | [ ] DBI-002 | M | DBI-001 | Profile null/blank/distinct/range per field from a real parish copy | Machine-readable profile plus sanitized summary |
 | [ ] DBI-003 | M | DBI-002 | **Classify text-encoding per text field** (VNI / TCVN3-UTH / Unicode / ambiguous) | Counts and examples per class; ambiguous set enumerated |
 | [ ] DBI-004 | M | DBI-002 | Classify every date-like field and observed precision | Invalid and ambiguous values counted with examples |
