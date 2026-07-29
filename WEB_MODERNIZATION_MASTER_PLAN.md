@@ -211,7 +211,7 @@ Every one of these is a characterization test waiting to be written, and every o
 
 ### 2.7 Navigation surface and muscle memory
 
-`frmMain` exposes **30 top-level entry points**, opened as tabs rather than child windows (`ShowForm`). The full list is in `frmMain.cs`; it is the de-facto sitemap of the new application.
+`frmMain.LoadFunction` handles **28 dispatch keys**. They are not all tabs: some call `ShowForm`, some open modal dialogs, some run background operations, and three are retired network/update behavior. The menu also exposes distinct import, merge, backup, restore, export, option, password, and exit commands. §3.6 maps both sets and replaces the earlier unverified “30 tab entry points” count.
 
 Keyboard shortcuts are defined once and used across every screen — `frmBase.cs:14-15` and `GXAddEdit.cs:344-346`:
 
@@ -423,7 +423,7 @@ The desktop platform is obsolete; the workflows on it are not. Staff should be a
 - **Field order and grouping match** the legacy form within each screen.
 - **Keyboard shortcuts are preserved verbatim** (§2.7). Data entry here is keyboard-heavy and high-volume; a mouse-first redesign is a regression regardless of how modern it looks.
 - **Vocabulary matches.** Screen labels use the same Vietnamese terms as the desktop — `Giáo dân`, `Gia đình`, `Bí tích`, `Hôn phối`, `Giáo họ`. Do not translate, modernize, or "clarify" domain vocabulary.
-- **The 30 entry points in §2.7 map to routes**, so a user who knows where a function lives still knows.
+- **The 28 dispatch keys plus distinct menu-only commands in §2.7 map to routes, actions, or explicit retirements**, so a user who knows where a function lives still knows what replaced it.
 
 Every UI card in §11 is accepted against the flow map produced by `FLO-001`–`FLO-003`, not against a designer's judgment. Deviations are allowed but must be listed in `docs/architecture/flow-deviations.md` with a reason and the domain expert's approval.
 
@@ -516,6 +516,81 @@ Duplicate `TabIndex` values and nested controls make Designer order non-authorit
 For every script record fixture id, legacy version, operator role, exact entry point, field/focus sequence, validation branch, override choice, canonical and derived rows before/after, generated report name, and preserve/change/retire decision. Add specific evidence for partial-date precision, clergy selection, archived/deceased/transferred inclusion, transaction failure, duplicate detection, and report reprint.
 
 FLO-002 closes only after all fourteen scripts are run, LEG-003/004 questions are resolved, the expert approves expected outcomes, saved-query fixtures exist for relevant marriage/bann projections, and each deliberate deviation is recorded. Static evidence cannot close the card.
+
+### 3.6 Provisional remaining-module flows and main route map
+
+**FLO-003 status (2026-07-29): static draft complete; approval pending.** This section maps every `LoadFunction` key and the distinct system-menu commands, then supplies walkthroughs for catechism, associations, vocation, statistics, import/merge, and administration. Target paths are stable planning names, not implemented routes.
+
+#### All 28 `LoadFunction` dispatch keys
+
+| # | Legacy key / label | Legacy behavior | Target route or decision |
+|---:|---|---|---|
+| 1 | `itNhapGiaoXu` / Giáo xứ | Parish, hierarchy, and clergy tab | `/organization/parish`; includes clergy management |
+| 2 | `itNhapGiaoHo` / Giáo họ | Parish-section tab | `/organization/sections` |
+| 3 | `itNhapGiaoDan` / Danh sách giáo dân | Active people tab | `/people` |
+| 4 | `itNhapGiaDinh` / Danh sách gia đình | Active household tab | `/households` |
+| 5 | `itDanhSachHoiDoan` / Danh sách hội đoàn | Association tab | `/associations` |
+| 6 | `itSoBiTich` / Danh sách sổ bí tích | Sacrament-batch tab | `/sacraments/batches` |
+| 7 | `itThongKeChung` / Thống kê chung | Statistics tab | `/statistics` |
+| 8 | `itLuuTruGiaoDan` / Hồ sơ lưu trữ giáo dân | Archived-people tab | `/people/archive` |
+| 9 | `itLuuTruGiaDinh` / Hồ sơ lưu trữ gia đình | Archived-household tab | `/households/archive` |
+| 10 | `itTimGiaoDan` / Tìm giáo dân | Reused modal search | `/people/search`; preserve quick-open behavior |
+| 11 | `itTimGiaDinhCuaGiaoDan` / Tìm gia đình của giáo dân | Reused modal search | `/households/search`; label must match actual household criteria, not class name |
+| 12 | `itTimThayThe` / Tìm và thay thế | Modal query builder leading to people/household result tab | `/data-tools/find-replace`; admin-only candidate pending expert approval |
+| 13 | `itKiemTraGiaoDan` / Kiểm tra dữ liệu giáo dân | Person-anomaly tab | `/data-quality/people` |
+| 14 | `itKiemTraGiaDinh` / Kiểm tra dữ liệu gia đình | Household-anomaly tab | `/data-quality/households` |
+| 15 | `itKiemTraPhienBan` / Kiểm tra phiên bản | Legacy update check | **Retire**; ordinary managed deployment |
+| 16 | `itAboutUs` / Phần mềm và tác giả | About dialog | `/about`; replace product/support content |
+| 17 | `itGopY` / Liên hệ tác giả | Opens legacy website when online | **Retire legacy destination**; replacement support contact only if the parish names one |
+| 18 | `itHuongDan` / Hướng dẫn sử dụng | Context-sensitive help | `/help` plus contextual help ids |
+| 19 | `itRaoHonPhoi` / Danh sách rao hôn phối | Bann tab | `/marriage/banns` |
+| 20 | `itChuanHoaDuLieuGiaoDan` / Chuẩn hóa dữ liệu giáo dân | Confirmed bulk title-case operation | `/data-quality/normalize/people`; migration/admin tool only if examples prove it is needed |
+| 21 | `itChuanHoaDuLieuGiaDinh` / Chuẩn hóa dữ liệu gia đình | Confirmed bulk title-case operation | `/data-quality/normalize/households`; same restriction |
+| 22 | `itChuyenHoGiaoDan` / Chuyển họ cho giáo dân | Bulk person section-move tab | `/organization/move-people` |
+| 23 | `itListAccount` / Danh sách tài khoản | Account-management tab | `/admin/users` |
+| 24 | `itChuyenHoGiaDinh` / Chuyển họ cho gia đình | Bulk household section-move tab | `/organization/move-households` |
+| 25 | `itGiaoLy` / Danh sách khối lớp | Catechism grade/year tab | `/catechism` |
+| 26 | `itThongTinOnline` / Thông tin online | Legacy website message check | **Retire**; covered by SEC-003 |
+| 27 | `itLapBiTichTuDong` / Tạo danh sách bí tích tự động | Modal batch generator | `/sacraments/generate` |
+| 28 | `itBieuDo` / Biểu đồ | Modal statistics chart | `/statistics/charts` |
+
+#### Distinct system-menu commands
+
+| Legacy command | Target placement / decision |
+|---|---|
+| Import from another QLGX database | `/admin/imports/legacy`; restricted inspect/map/stage/validate/preview/approve/commit/verify pipeline |
+| Import from MGC | Same route with the MGC adapter and explicit parish selection |
+| Import from Excel | `/admin/imports/spreadsheet`; approved template only |
+| Merge another QLGX database | No live merge route; replace with field-level reconciliation inside a restricted import run |
+| Back up | `/admin/backups`; request/monitor managed encrypted backup, not client ZIP |
+| Restore | `/admin/restores`; isolated restore, verify, then promote |
+| Export all data to Excel | `/admin/exports`; permission-scoped, expiring artifact; JSON/CSV/XLSX as specified |
+| Options | `/settings`; only typed approved parish/user settings |
+| Change password | `/account/password` |
+| Exit | Sign out when security intent is to end the session; closing the browser remains browser behavior |
+
+Duplicate menu commands for search, find/replace, version, help, and about reuse the route-map decisions above.
+
+#### Remaining-module walkthrough scripts
+
+| Script | Operator task | Evidence to capture and decision required |
+|---|---|---|
+| NAV-01 | Open every dispatch item from both sidebar/button surfaces, reopen an existing item, switch tabs, and close it with clean/dirty state | Label, ordering/group, tab versus modal/action, single-instance behavior, remembered state, authorization, target route, and retirement explanation |
+| CAT-01 | Create a catechism year/grade, manager, two classes, teachers, and students; edit completion/notes; delete/cancel | Required fields, year defaults, student/teacher uniqueness, archive warnings, cascade behavior, exports |
+| CAT-02 | Promote a selected subset to a target class containing a duplicate; inspect source/target after rerun | Copy-versus-move semantics, source history/completion, ordering, duplicate result, idempotency |
+| CAT-03 | Import valid/invalid/duplicate synthetic students, pause/cancel, preview, and retry | Exact workbook contract, person matching, atomicity, row dispositions, retry and audit |
+| ASC-01 | Create association, assign exactly one leader, add/exit/re-enter member, perform leader succession, remove member | Required leader policy, interval chronology, hard-delete decision, history output |
+| VOC-01 | Add vocation milestones to unmarried/married people, mark returned, clear all fields, and attempt marriage | Warning/override, meaning of active/returned, record-deletion behavior, partial dates, marriage constraint |
+| STA-01 | Run all 15 `frmThongKeChung` choices across date/age boundaries, missing dates, archive option, and parent/child section scope | Formula, population, inclusions/exclusions, partial-date semantics, ordering, total, approved expected rows |
+| STA-02 | Refilter/print one person, household, and marriage statistic; open `Biểu đồ` for matching criteria | Result parity, chart/list total parity, labels, permissions, export/print audit |
+| IMP-01 | Run synthetic legacy, MGC, and spreadsheet imports through inspect to verify, including duplicates and a recoverable failure | Adapter mapping, stable legacy keys, reconciliation equation, dry run, approval, rerun, sanitized output |
+| IMP-02 | Exercise legacy merge choices with synthetic conflicts without permitting an unrestricted overwrite | Field-level before/after, match rationale, authorization/reason, unresolved handling, audit |
+| OPS-01 | Request backup, restore into isolation, verify, promote/cancel, then create an authorized export | Recovery point/time, integrity proof, separation of backup/export, artifact access/expiry |
+| ADM-01 | Create/disable a user, change own password, attempt restricted routes, change one typed setting, sign out | Role matrix, session termination, audit, settings validation, no legacy credential/config leakage |
+
+#### FLO-003 closure
+
+For every route/action record the legacy key/menu path, current label, target path, authorization, offline/online availability, source module, walkthrough script, and preserve/change/retire decision. FLO-003 closes only after all 28 keys and ten distinct menu commands are reconciled, the twelve scripts are completed on synthetic data, statistics formulas are approved, and the expert signs off catechism/association/vocation/import behavior. Retired entries remain in the map so they cannot be accidentally reintroduced.
 
 ## 4. Locked Architecture Decisions
 
@@ -986,7 +1061,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | [ ] BUG-004 | M | BUG-003 | Convert every still-required rule into a named failing characterization test in `packages/domain` | Test ids referenced from the register; suite red until its module is built |
 | [ ] FLO-001 | M | LEG-002 | Provisional people/household map in §3.4: 10 walkthrough scripts, entry-point/default notes, field-group snapshot, and observation record | Static draft complete; blocked on Windows runtime capture and domain-expert walkthrough/approval of every script |
 | [ ] FLO-002 | M | LEG-003, LEG-004 | Provisional sacrament/marriage/bann/transfer map in §3.5: 14 walkthrough scripts, field/command snapshot, and shared acceptance record | Static draft complete; blocked on Windows runtime capture, saved-query fixtures, and domain-expert walkthrough/approval |
-| [ ] FLO-003 | S | LEG-005, LEG-006 | Map catechism, association, vocation, statistics, import flows; record the 30 `frmMain` entry points as a route map | Every entry point has a target route |
+| [ ] FLO-003 | S | LEG-005, LEG-006 | Provisional remaining-module map in §3.6: all 28 `LoadFunction` keys, 10 distinct menu commands, and 12 walkthrough scripts; correct the earlier unsupported count of 30 tab entry points | Static map complete; blocked on Windows runtime capture, statistics formula approval, and domain-expert walkthrough/sign-off |
 | [ ] FLO-004 | S | FLO-001–003 | Record the §2.7 shortcut table and browser conflicts in `docs/architecture/keyboard-map.md` | Every legacy key has a web binding or a documented substitute |
 | [ ] RPI-001 | S | SEC-001 | Report catalog for the in-scope set (§7.1) | Paths match `BIN/Template/` |
 | [ ] RPI-002 | M | RPI-001 | Record paper, margins, fonts, fields, conditions, signatures, language variants | No in-scope template unclassified |
