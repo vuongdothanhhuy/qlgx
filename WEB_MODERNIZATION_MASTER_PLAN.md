@@ -945,6 +945,50 @@ Convert the 19 `Chung` templates plus the pilot parish's diocese overrides. The 
 
 `Chung` set: `BiTich`, `ChungNhanHonPhoi`, `ChungNhan_GioiThieuHocGiaoLy`, `DanhSachRaoHonPhoi`, `GioiThieuChuyenXu`, `GioiThieuGiaoLyHonPhoi`, `GioiThieuRuaToi`, `GioiThieuThemSuc`, `HonPhoi`, `KQRaoHonPhoi`, `LyLichCaNhan`, `PhieuGiaDinh-A3`, `PhieuGiaDinh`, `RaoHonPhoi`, `RuaToi`, `SoGiaDinh`, `SoGiaDinh1`, `ThemSuc`, `XTRL`.
 
+#### 7.1.1 Checked-in candidate inventory (RPI-001 preparation)
+
+The repository contains 63 candidate files under `BIN/Template/`, totalling approximately 2.1 MiB. This is a static inventory of design references, not the final in-scope catalog: the pilot parish, its diocese, and its deployed template folder are still unknown. The inventory was generated from the checked-in tree on 2026-07-29. A SHA-256 over the lexically sorted list of each file's SHA-256 and path is `efcbcf60e526b26d261a39d21fced5546f52346784b3f80c3ccfbc1e01c713e3`; regenerate the per-file manifest when RPI-001 begins so changes cannot be mistaken for approved inputs.
+
+| Folder | Files | Relationship to `Chung` |
+|---|---:|---|
+| `Chung` | 19 | Common candidate set and fallback |
+| `BMT` | 4 | Overrides for `BiTich`, `ChungNhanHonPhoi`, `HonPhoi`, `RaoHonPhoi` |
+| `Phan Thiet` | 7 | Overrides for the four reports above plus `RuaToi`, `ThemSuc`, `XTRL` |
+| `TP HCM` | 8 | Seven standard overrides plus the extra `chung chi bi tich.docx` |
+| `TP HCM A4` | 14 | Seven standard names and seven parallel `(1)` alternatives; selection semantics are not established |
+| `Vinh` | 7 | Standard seven-report override set |
+| `Xuan Loc` | 4 | Same four-report subset as `BMT` |
+
+The 63 files reduce to 27 literal filenames and 20 logical families when the seven `TP HCM A4/* (1).doc` alternatives are grouped with their namesakes:
+
+| Candidate distribution | Logical families |
+|---|---|
+| Present in eight files across all seven folders | `BiTich`, `ChungNhanHonPhoi`, `HonPhoi`, `RaoHonPhoi` |
+| Present in six files across `Chung`, `Phan Thiet`, `TP HCM`, `TP HCM A4`, `Vinh` | `RuaToi`, `ThemSuc`, `XTRL` |
+| Common-only | `ChungNhan_GioiThieuHocGiaoLy`, `DanhSachRaoHonPhoi`, `GioiThieuChuyenXu`, `GioiThieuGiaoLyHonPhoi`, `GioiThieuRuaToi`, `GioiThieuThemSuc`, `KQRaoHonPhoi`, `LyLichCaNhan`, `PhieuGiaDinh-A3`, `PhieuGiaDinh`, `SoGiaDinh`, `SoGiaDinh1` |
+| TP HCM-only | `chung chi bi tich` |
+
+Only two byte-identical cross-folder pairs exist: `Chung/RuaToi.doc` equals `Phan Thiet/RuaToi.doc` (SHA-256 `0e7a0ef3e0ae1f9c6eb06a3a5301f87a6de2dcd4c3a9875f6d470a44473adcea`), and `Chung/ThemSuc.doc` equals `Phan Thiet/ThemSuc.doc` (SHA-256 `1140318a633338d62cdf41ec8f631d408eaf81e7ef49e1f0d4c9f1cd32867e21`). Every other candidate is byte-distinct; identical filenames therefore mean a possible layout or wording variant, not an interchangeable copy.
+
+Content type must be detected from the file signature, not the extension. There are 57 OLE Word files, three OLE Excel files, and three OOXML Word files. Two OOXML files have misleading `.doc` extensions: `Chung/GioiThieuRuaToi.doc` and `Chung/PhieuGiaDinh.doc`; the third is `TP HCM/chung chi bi tich.docx`. Any extraction or conversion tool selected by extension alone will mishandle the first two.
+
+Static source linkage establishes these report paths without deciding whether each checked-in file matches the deployed pilot copy:
+
+| Runtime path | Candidate family or families | Static evidence |
+|---|---|---|
+| Sacrament certificates | `RuaToi`, `XTRL`, `ThemSuc`, `BiTich` | `ReportChungNhanBT` selects one family by sacrament type |
+| Marriage document | `HonPhoi` | `ReportHonPhoi` and `ReportGioiThieuHP` |
+| Marriage certificate | `ChungNhanHonPhoi` | `ReportChungNhanHP` |
+| Banns and result | `RaoHonPhoi`, `KQRaoHonPhoi` | `ReportRaoHP` selects the normal or result family |
+| Banns list | `DanhSachRaoHonPhoi` | `ReportRaoHP.ReportList` |
+| Personal history | `LyLichCaNhan` | `ReportLyLichCaNhan` |
+| Household book | `SoGiaDinh`, conditionally `SoGiaDinh1` | `ReportSoGiaDinh`; the second template depends on diocese folder and the print-parents setting |
+| Household sheet | `PhieuGiaDinh` | `GxGiaDinhList` assigns the Word report family |
+| Introduction documents | `GioiThieuRuaToi`, `GioiThieuGiaoLyHonPhoi`, `GioiThieuThemSuc`, `GioiThieuChuyenXu` | `frmReport` assigns a family to `RpGioiThieuBase` |
+| Unresolved checked-in candidates | `ChungNhan_GioiThieuHocGiaoLy`, `PhieuGiaDinh-A3`, `chung chi bi tich` | No unambiguous caller was found outside the constants/configuration boundary; confirm with runtime observation |
+
+**RPI-001 status (2026-07-29): candidate inventory complete; task remains open.** At kickoff, obtain a read-only copy of the pilot installation's active template folder, record its configured diocese, hash every deployed file, and compare that manifest with this tree. The domain owner must then mark each common and pilot-override family as in scope, fallback-only, superseded, locally customized, or unused. Do not infer the active `TP HCM A4` alternative from `(1)` naming and do not approve a candidate merely because its filename has a static caller.
+
 ### 7.2 Registry shape
 
 The legacy Office files are design references, not runtime templates. Base templates live at:
@@ -1104,7 +1148,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | [ ] FLO-002 | M | LEG-003, LEG-004 | Provisional sacrament/marriage/bann/transfer map in §3.5: 14 walkthrough scripts, field/command snapshot, and shared acceptance record | Static draft complete; blocked on Windows runtime capture, saved-query fixtures, and domain-expert walkthrough/approval |
 | [ ] FLO-003 | S | LEG-005, LEG-006 | Provisional remaining-module map in §3.6: all 28 `LoadFunction` keys, 10 distinct menu commands, and 12 walkthrough scripts; correct the earlier unsupported count of 30 tab entry points | Static map complete; blocked on Windows runtime capture, statistics formula approval, and domain-expert walkthrough/sign-off |
 | [ ] FLO-004 | S | FLO-001–003 | Provisional keyboard map in §3.7: declared/effective distinction, 12 intent bindings, dispatch/focus rules, and cross-browser verification matrix | Static map complete; blocked on Windows legacy observation, operator approval, and supported-browser keyboard/accessibility tests |
-| [ ] RPI-001 | S | SEC-001 | Report catalog for the in-scope set (§7.1) | Paths match `BIN/Template/` |
+| [ ] RPI-001 | S | SEC-001 | Finalize the candidate report catalog in §7.1.1 against the pilot deployment | Every in-scope path and checksum matches the active `BIN/Template/` copy |
 | [ ] RPI-002 | M | RPI-001 | Record paper, margins, fonts, fields, conditions, signatures, language variants | No in-scope template unclassified |
 | [ ] RPI-003 | S | RPI-002 | Select and approve the five prototypes | Selection covers list, certificate, letter, fixed form, batch |
 
