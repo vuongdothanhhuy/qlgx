@@ -1062,6 +1062,43 @@ The `<language>` segment is required (`vi-vn`, `en-us`) — see §2.5. Template 
 
 Before mass conversion, prove five representative reports covering a list, a certificate, a letter, a complex fixed form, and a multi-page batch. Domain users compare **printed** output, not screen previews. Record approved deviations from the legacy Office output.
 
+#### 7.4.1 Provisional prototype slate (RPI-003 preparation)
+
+Use the following five families unless the pilot inventory or domain owner supplies a documented reason to replace one. They were selected to expose different rendering and data-contract risks, not because they are the easiest templates:
+
+| Order | Required shape | Proposed family | Why it is representative | Required legacy comparator |
+|---:|---|---|---|---|
+| 1 | Certificate | `ChungNhanHonPhoi` | One-page fixed composition, two people, sacrament and marriage facts, witnesses, recipient parish, and signature/seal space; all eight checked-in candidates have distinct token contracts | The pilot's deployed override plus `Chung/ChungNhanHonPhoi.doc` as the fallback comparator |
+| 2 | Letter | `GioiThieuChuyenXu` | Prose, recipient and sender identities, a seven-row household table, row deletion below seven, row insertion above seven, long text, and signature space | `Chung/GioiThieuChuyenXu.doc`, or a locally customized deployed copy if present |
+| 3 | List | `DanhSachRaoHonPhoi` | Excel-origin repeating rows, paired-row numbering/merging, borders, wrapping, language-sensitive dates, and multi-column overflow pressure | `Chung/DanhSachRaoHonPhoi.xls`, or its deployed replacement |
+| 4 | Complex fixed form | `PhieuGiaDinh` | A4 landscape OOXML with two tables, three sections, eight placeholder member rows, row growth above eight, blank-row retention below eight, status styling, and a changes ledger | `Chung/PhieuGiaDinh.doc`, plus `PhieuGiaDinh-A3.doc` only if the pilot actively uses it |
+| 5 | Multi-page batch | `SoGiaDinh` | Excel-origin family book, dynamic rows and pages, broad configuration matrix, conditional `SoGiaDinh1` selection, event detail composition, and archived/member-state styling | Deployed `SoGiaDinh.xls`; include `SoGiaDinh1.xls` whenever the print-parents condition can select it |
+
+This order deliberately establishes fixed text and signature fidelity before adding row mutation, then table growth, fixed-form density, and finally configuration-driven pagination. A later prototype may reuse approved typography, date formatting, table, header/footer, and PDF primitives, but its approval is independent.
+
+Use synthetic fixtures only. Each fixture receives a stable id and stores the typed input JSON, template id/version/hash, locale/timezone, configuration flags, renderer version, output PDF hash, legacy reference PDF hash, and signed comparison result.
+
+| Prototype | Minimum fixture matrix |
+|---|---|
+| `ChungNhanHonPhoi` | Complete couple; missing optional sacrament facts; partial dates; longest approved names/parishes/addresses; Vietnamese diacritics; pilot override versus common fallback |
+| `GioiThieuChuyenXu` | One, seven, eight, and enough household members to force a second page; no explicit household head; long address/recipient/parish values; missing optional birth place |
+| `DanhSachRaoHonPhoi` | No rows with the approved empty-result behavior; one bann pair; two pairs; enough pairs for two pages; all bann rounds; long names/parishes; both name-order settings and supported languages |
+| `PhieuGiaDinh` | One, eight, nine, and multi-page member counts; every member status style; partial sacrament dates; long values; empty optional cells; member-id versus sequence heading |
+| `SoGiaDinh` | One and multi-page families; each inclusion/exclusion setting; event place/register/godparent/witness toggles; parents off/on; archived, deleted, transferred, married, and deceased members; long and partial-date values |
+
+Approval compares physical legacy and web-generated prints produced from the same fixture and paper stock. The evidence packet must record:
+
+1. Exact paper size/orientation, page count, margins, table boundaries, line wrapping, page breaks, header/footer placement, and signature/seal whitespace.
+2. Every expected value and fixed phrase, with no unreplaced bracket token, dropped row, invented value, or silent truncation.
+3. Vietnamese glyphs, punctuation, font substitutions, emphasis, borders, strike-through/italic status styling, and blank/incomplete-field treatment.
+4. Determinism: two clean renders with identical input and renderer version have identical PDF hashes.
+5. Accessibility and browser checks for the preview/download controls; print fidelity is judged from the PDF and paper, not browser print heuristics.
+6. A domain-owner decision for every difference, marked defect, intentional modernization, or accepted legacy discrepancy. An acceptance cannot be conditional or verbal.
+
+The proposed engineering tolerance is exact paper/orientation/page-count agreement, no clipping or overlap, all required content present, and no unexplained layout displacement greater than 2 mm on the printed page. The domain owner may tighten the 2 mm threshold or approve a named exception, but may not waive missing content, broken Vietnamese text, an unusable signature area, or nondeterministic output.
+
+**RPI-003 status (2026-07-29): provisional slate and approval matrix complete; task remains open.** RPI-001 and RPI-002 must first identify the pilot's deployed variants and authoritative properties. Then the report owner and domain owner must approve or replace each proposed family, approve the fixtures and print tolerance, and sign the five physical-print comparisons. This section is a recommendation, not approval evidence.
+
 ### 7.5 Exports
 
 - CSV: UTF-8 with a BOM option for Vietnamese Excel; formula-injection characters escaped.
@@ -1201,7 +1238,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | [ ] FLO-004 | S | FLO-001–003 | Provisional keyboard map in §3.7: declared/effective distinction, 12 intent bindings, dispatch/focus rules, and cross-browser verification matrix | Static map complete; blocked on Windows legacy observation, operator approval, and supported-browser keyboard/accessibility tests |
 | [ ] RPI-001 | S | SEC-001 | Finalize the candidate report catalog in §7.1.1 against the pilot deployment | Every in-scope path and checksum matches the active `BIN/Template/` copy |
 | [ ] RPI-002 | M | RPI-001 | Complete the §7.1.2 property records from deployed templates and authoritative legacy renders | No in-scope template, token contract, condition, signature region, or language variant unclassified |
-| [ ] RPI-003 | S | RPI-002 | Select and approve the five prototypes | Selection covers list, certificate, letter, fixed form, batch |
+| [ ] RPI-003 | S | RPI-002 | Approve or replace the five-family slate and fixture matrix in §7.4.1 | Signed physical-print comparisons cover list, certificate, letter, fixed form, and batch |
 
 ### 11.3 Foundation (Phase 1)
 
