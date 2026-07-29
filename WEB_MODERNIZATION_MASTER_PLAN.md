@@ -50,6 +50,8 @@ A temporary delay is different. While access is being arranged, execute the boun
 
 Determines which diocese override templates enter scope (§7.1) and whose workflows are authoritative when practice differs.
 
+**Pilot update (2026-07-30):** Phu Long Parish is the intended PoC acceptance site. The diocese and the specific daily operator/domain expert remain to be named; do not infer the diocese from a folder name or parish name because more than one installation may use similar labels.
+
 ### 0.3 Named domain expert — required before Gate 0
 
 A parish secretary or administrator who does this work daily. Four hours per week, eight during sacrament and marriage discovery. Without a named person with reserved time, the characterization cards produce guesses that look like specifications.
@@ -151,6 +153,33 @@ Use the named expert's time in this order:
 Every session ends with named decisions, unresolved questions, owner, and due date. Production values remain in the restricted review view and never enter meeting screenshots, recordings, ordinary notes, source control, or AI/tool consultations.
 
 **Resume rule:** once items 1–6 are scheduled or present, follow the D0–D5 handoff above. If they have no credible delivery date, the only valid next project decision is to pause, continue pursuing the evidence, or formally remove migration/parity promises and re-plan. “Start the web app anyway” is not a neutral option.
+
+### 0.6 Sample intake started (2026-07-30)
+
+The project root now contains an ignored sample `giaoxu.mdb`, and `QuanLyGiaoXu/` contains a runnable sample installation. Treat both as restricted until the owner explicitly confirms that every row and file is synthetic. This is enough to resume schema/package characterization, but it is **not yet an accepted D0 package**.
+
+| Intake check | Observed result | Status and consequence |
+|---|---|---|
+| Root database isolation | Root `giaoxu.mdb` is ignored and recognized as JET4 Access | Ready for read-only tools; never stage or commit |
+| Install-tree isolation | `QuanLyGiaoXu/` is not ignored; it arrived with 193 staged additions, including 96 configuration, document, spreadsheet, XML, or image files. All 193 were safely unstaged on 2026-07-30 and all 196 working files were preserved | Partial resolution: accidental commit risk is reduced, but ignore/move containment remains required before implementation or broad staging |
+| Package shape | 196 regular files, 15 directories, no symlinks; one application executable, one version manifest, one `Template/`, one empty `Images/`, and one internal `giaoxu.mdb` | Runtime assets are present; zero image files means the sample cannot prove photo collection |
+| Database pairing | Root and internal files have equal size but different file digests | Do not call them byte-identical snapshots |
+| Schema pairing | Root, internal, and embedded seed are all JET4 with 26 tables, 252 fields, 26 primary keys, six secondary indexes, no extracted foreign keys, and the same four saved-query names/definitions | No sample schema drift found; DBI-001's structural hypothesis is confirmed for this sample |
+| Logical data pairing | All 26 table row counts match; in-memory table-export digests match for 25 tables | Domain rows appear paired; only `CauHinh` content differs, so configured settings need an authority decision before report/runtime scope is inferred |
+| Deployed templates | 67 deployed files: all 63 checked-in candidates are byte-identical, plus four deployed-only `.doc` files | RPI-001 has a concrete four-file sample delta; names/content remain restricted until disclosure review and pilot scope confirmation |
+| Pilot | User will test the PoC with Phu Long Parish | Parish identified; diocese, operator, and whether this sample represents Phu Long remain open |
+
+No row value, password, account value, configured setting value, contact, identifier, photo, template text, filename of a deployed-only artifact, or database/content digest was printed or copied into the plan. The logical comparison streamed values directly into digests and reported equality only.
+
+Before continuing to DBI-002:
+
+1. **Resolved 2026-07-30:** unstage every `QuanLyGiaoXu/` addition without deleting the working files.
+2. Either add `/QuanLyGiaoXu/` to the security ignore boundary or move the tree under the already ignored `legacy-install/` directory. This requires lifting the current “only edit the plan file” restriction for the `.gitignore` change, or an explicit choice to move the local package.
+3. Confirm that root `giaoxu.mdb` is the source-data sample and the internal copy is only the runnable installation copy.
+4. Decide which copy's `CauHinh` settings are authoritative for PoC behavior—normally the runnable installation copy, but do not assume.
+5. Confirm whether the sample is entirely synthetic/sanitized or contains real parish/person data. Until confirmed, use restricted local aggregation only and expose no values.
+
+Once those five items are resolved, run DBI-002 against the authoritative source copy, then DBI-003–005 in dependency order. The PoC scaffold still waits for the repository to leave its explicit planning-only phase.
 
 ---
 
@@ -466,7 +495,7 @@ Static reconciliation changes four earlier assumptions:
 
 To finish DBI-001, run the same no-row extraction on a restricted read-only copy of the pilot database; capture file hash, Jet/ACE version, table/query names, columns, required/default/autonumber properties, primary/unique/secondary indexes, and relationships. Compare by object and field rather than trusting counts. Every seed-only, live-only, type-changed, length-changed, key-changed, or query-definition difference receives a disposition: canonical, upgrade residue, temporary, locally customized, or unknown. Do not read or export rows during DBI-001.
 
-**DBI-001 status (2026-07-29): embedded-seed hypothesis complete; task remains open.** The seed proves the extraction method and exposes plan drift, but it cannot establish the schema of a parish database upgraded over many releases. Close only after the live schema comparison is complete and §2.3 is reconciled without unresolved objects.
+**DBI-001 status (2026-07-30): sample schema comparison complete; pilot task remains open.** The root sample and runnable-install copy structurally match the seed: the same tables, fields, keys, secondary indexes, absent relationship metadata, and saved-query definitions. Their domain-table counts and streamed export digests also match, while `CauHinh` differs. This closes schema drift for the provided sample, not for an unconfirmed Phu Long production copy. Close DBI-001 only after the owner designates the authoritative source/configuration and confirms whether this is the pilot database.
 
 ## 3. Scope
 
@@ -1066,7 +1095,7 @@ Static source linkage establishes these report paths without deciding whether ea
 | Introduction documents | `GioiThieuRuaToi`, `GioiThieuGiaoLyHonPhoi`, `GioiThieuThemSuc`, `GioiThieuChuyenXu` | `frmReport` assigns a family to `RpGioiThieuBase` |
 | Unresolved checked-in candidates | `ChungNhan_GioiThieuHocGiaoLy`, `PhieuGiaDinh-A3`, `chung chi bi tich` | No unambiguous caller was found outside the constants/configuration boundary; confirm with runtime observation |
 
-**RPI-001 status (2026-07-29): candidate inventory complete; task remains open.** At kickoff, obtain a read-only copy of the pilot installation's active template folder, record its configured diocese, hash every deployed file, and compare that manifest with this tree. The domain owner must then mark each common and pilot-override family as in scope, fallback-only, superseded, locally customized, or unused. Do not infer the active `TP HCM A4` alternative from `(1)` naming and do not approve a candidate merely because its filename has a static caller.
+**RPI-001 status (2026-07-30): sample manifest compared; pilot task remains open.** The provided runnable tree has all 63 checked-in candidates byte-identically plus four deployed-only `.doc` files. The configured diocese/template folder was not read because the two `CauHinh` copies differ and authority is unresolved. After the package is isolated, inspect only the approved configuration keys and have the domain owner classify the four extra files and every common/override family as in scope, fallback-only, superseded, locally customized, or unused. Do not infer the active alternative from a folder or filename and do not approve a candidate merely because it has a static caller.
 
 #### 7.1.2 Static template-property audit (RPI-002 preparation)
 
