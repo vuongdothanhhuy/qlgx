@@ -178,7 +178,7 @@ The `GiaoDan` table combines identity, contact, status, family, and sacramental 
 
 These are the facts that will break a naive importer.
 
-**Mixed Vietnamese font encodings.** `Source/DBAccess/CMemory.cs:570` detects VNI-encoded text on input and converts it to Unicode; line 1111 converts TCVN3/UTH; line 1463 strips diacritics. The whole `vnConvert` project exists for this. Rows written across 15+ years and many desktop versions are in *different* encodings, potentially within one table. An importer that assumes Unicode will silently mangle names and produce garbage certificates.
+**Mixed Vietnamese font encodings.** `Source/DBAccess/CMemory.cs:570` detects VNI-encoded text on input and converts it to Unicode; line 1111 converts decomposed Unicode (`iUTH`) to precomposed Unicode (`iUNI`); line 1463 strips diacritics. The `vnConvert` project separately contains maps for TCVN3 (`iTCV`) and other legacy encodings. Rows written across 15+ years and many desktop versions may use different encodings, potentially within one table. An importer that assumes Unicode—or conflates TCVN3 with decomposed Unicode—will silently mangle names and produce garbage certificates.
 
 **Partial dates.** Dates are stored and manipulated as day/month/year string parts, not `DateTime` — see `GetDateFromString`, `GetDatePart`, `SplitDatePart`, `GetIntOfDateFrom`/`GetIntOfDateTo` in `CMemory.cs`. A sacrament may be known only to the year. Precision is information and must survive.
 
@@ -1197,7 +1197,7 @@ packages/importer:
 Rules:
 
 - **Never connect to Access at runtime.** Extraction is offline, via `mdbtools` or a read-only Windows ODBC adapter, both producing the same neutral JSON.
-- **Encoding detection is the first transform.** Port the `vnConvert` detection logic (`CMemory.cs:570`, `1111`) to TypeScript. Every text field is classified VNI / TCVN3-UTH / Unicode and converted. Fields whose encoding is ambiguous are flagged, never guessed.
+- **Encoding detection is the first transform.** Port and test the relevant `vnConvert` maps and detection behavior (`CMemory.cs:570`, `1111`) in TypeScript. Classify each nonblank value as VNI, TCVN3, decomposed Unicode, precomposed Unicode, ASCII/insufficient evidence, mixed, another evidenced legacy encoding, or ambiguous. Ambiguous values are flagged, never guessed.
 - **Preserve raw source values.** Staging keeps the original string for every field; `legacy_event_raw` keeps original dates forever.
 - **Idempotent.** Two clean runs produce identical target data, keyed on `legacy_key`.
 - **Photos.** `extract` reads `AnhDaiDien` paths, copies the referenced files from the install directory, and reports missing files rather than failing.
@@ -1278,6 +1278,57 @@ Synthetic design-time verification uses only invented schemas and values:
 
 **DBI-002 status (2026-07-29): profiler contract complete; task remains open.** Implementation belongs to the importer phase and execution requires the restricted parish copy. Close only when every live field is present in the versioned private profile, all arithmetic reconciles, the sanitized outputs pass disclosure review, and every finding has an owner and disposition.
 
+### 9.2 Vietnamese encoding classifier contract (DBI-003 preparation)
+
+Encoding classification is per nonblank cell, then aggregated per field. A field may legitimately contain multiple classes; never assign one conversion to an entire column because its majority uses that encoding. Null, empty, and whitespace-only values retain the DBI-002 categories and are not evidence of an encoding.
+
+Use these result classes:
+
+| Class | Meaning | Import action |
+|---|---|---|
+| `unicode_nfc` | Valid precomposed Unicode with Vietnamese or other non-ASCII evidence | Preserve code points except approved NFC normalization |
+| `unicode_decomposed` | Valid decomposed Unicode/legacy `iUTH` sequences | Normalize to NFC and retain the original raw string |
+| `vni` | VNI-Windows sequences identified by the ported map with an exact round trip | Convert VNI → Unicode NFC |
+| `tcvn3` | TCVN3/ABC characters identified by the ported `iTCV` map with an exact round trip | Convert TCVN3 → Unicode NFC |
+| `other_legacy` | Another `vnConvert` map is evidenced by exact round trip and approved for this intake | Convert only after the encoding name and fixture are approved |
+| `ascii_or_unknown` | ASCII-only text provides no encoding evidence | Preserve unchanged; do not count it as proof that the field is Unicode |
+| `mixed` | Distinct spans in one value have strong evidence for different encodings | No automatic conversion; restricted manual review |
+| `ambiguous` | Multiple candidates remain possible, evidence is weak, or round trips disagree | No automatic conversion; restricted manual review |
+| `invalid` | Unpaired surrogate, replacement character, forbidden control, or conversion failure | Reject from automatic load and open a discrepancy |
+
+The detector pipeline is deterministic:
+
+1. Preserve the exact source string and compute its private HMAC reference before any trim, case, sign-position, or Unicode normalization.
+2. Record code-point category counts without emitting code points or text in sanitized output.
+3. Test well-formed Unicode and NFC/NFD state.
+4. Run every approved legacy candidate detector against the original value. A candidate is eligible only if decode → encode reproduces the original exactly and decode produces well-formed Unicode without replacement/control characters.
+5. Compare candidate evidence. Unique strong evidence selects a class; conflicting span evidence selects `mixed`; overlapping or weak evidence selects `ambiguous`. Vietnamese word plausibility may prioritize manual review but must never override round-trip evidence automatically.
+6. Normalize only the selected decoded output to NFC. Do not change case, punctuation, whitespace, word order, or Vietnamese tone-mark position during extraction.
+7. Prove idempotence: classifying/converting the normalized result again yields `unicode_nfc` or `ascii_or_unknown` and exactly the same normalized string.
+
+Extend `profile.private.json` with per-value opaque reference, source digest, result class, candidate classes, normalized digest, round-trip status, and reviewer disposition for `mixed`, `ambiguous`, `invalid`, or `other_legacy`. Extend sanitized output only with counts by table/field/class and conversion/review totals. Real strings appear only in a separately access-controlled review view, one value at a time; screenshots, clipboard exports, issue trackers, commits, and the Markdown summary may contain synthetic examples only.
+
+Per field, reconcile:
+
+```text
+non_blank =
+  unicode_nfc + unicode_decomposed + vni + tcvn3 +
+  other_legacy + ascii_or_unknown + mixed + ambiguous + invalid
+```
+
+The synthetic corpus must cover:
+
+- Vietnamese names, places, pastoral wording, mixed upper/lower case, and every mapped vowel/tone family in Unicode NFC, decomposed Unicode, VNI, and TCVN3;
+- ASCII-only names/codes, punctuation, digits, email/URL-like strings, and Latin text that happens to resemble a legacy sequence;
+- a value that combines Unicode and VNI spans, one combining mark without a base, repeated combining marks, forbidden controls, replacement characters, emoji, and non-Vietnamese scripts;
+- empty/whitespace values, leading/trailing whitespace, tabs/newlines, maximum-length text, and a conversion whose Unicode output is longer than the source;
+- deliberately ambiguous short strings, all case variants, and regression fixtures for the legacy `Aù`, `Uù`, `ø`, and `©` cleanup behavior without assuming those replacements are universally correct;
+- round-trip, idempotence, no-log-leak, and deterministic-count tests across both MDB extraction adapters.
+
+Acceptance requires byte-for-byte agreement between the TypeScript port and the legacy conversion maps for approved fixtures, plus domain review of normalized synthetic display values. Every real `mixed`, `ambiguous`, `invalid`, and `other_legacy` occurrence receives an opaque finding and explicit disposition. Critical person, household, sacrament, marriage, clergy, organization, and report fields have zero unresolved encoding findings before load approval.
+
+**DBI-003 status (2026-07-29): classifier contract complete; task remains open.** The static code distinguishes TCVN3 from decomposed Unicode and supports more encodings than the earlier three-way label implied. The actual classes and counts remain unknown until DBI-002 runs on the parish copy; no encoding distribution is inferred from the seed.
+
 Cutover: freeze desktop writes, run `extract`/`load`/`verify`, smoke test, open the web app, keep the desktop application and final `.mdb` read-only for 90 days.
 
 ## 10. Roadmap
@@ -1335,7 +1386,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | [x] LEG-006 | S | LEG-001 | Catalog imports, merge, backup, statistics (`frmThongKeChung`) in `docs/architecture/legacy-operations-inventory.md` | 33 import/merge/backup/statistics command rows reconcile to compiled entry points and each has an explicit preserve / replace / retire decision |
 | [ ] DBI-001 | S | SEC-001 | Finalize the §2.11 embedded-seed schema hypothesis against a restricted pilot copy | Live table/query, field, key, index, relationship, and type inventory reconciles with §2.3 without reading rows |
 | [ ] DBI-002 | M | DBI-001 | Implement and run the aggregate profiler contract in §9.1 against the restricted parish copy | Every live field reconciles in private JSON; sanitized JSON/Markdown pass disclosure review |
-| [ ] DBI-003 | M | DBI-002 | **Classify text-encoding per text field** (VNI / TCVN3-UTH / Unicode / ambiguous) | Counts and examples per class; ambiguous set enumerated |
+| [ ] DBI-003 | M | DBI-002 | Implement and run the per-value encoding classifier in §9.2 | Field/class counts reconcile; restricted ambiguous set is dispositioned; critical fields have zero unresolved findings |
 | [ ] DBI-004 | M | DBI-002 | Classify every date-like field and observed precision | Invalid and ambiguous values counted with examples |
 | [ ] DBI-005 | S | DBI-002 | Audit `AnhDaiDien` paths against the install directory | Missing-file count known before import |
 | [x] BUG-001 | M | LEG-001 | Translate all 116 `VersionConfig.xml` changelog entries into an English/Vietnamese rule register at `docs/architecture/recorded-rules.md`, one row each: version, original text, rule implied, module, status | `CHG-001`–`CHG-116` reconcile to all 116 XML bullets; every row is classified rule / cosmetic-unspecified / obsolete implementation and behavioral rows remain pending BUG-003 |
