@@ -34,7 +34,7 @@ Work that cannot start until these exist. Nothing in Phase 0 beyond `.gitignore`
 Obtain, under restricted access, from a live installation:
 
 1. **`giaoxu.mdb`** — the actual parish file, not the blank seed at `Source/ChuongTrinh/Resources/giaoxu.mdb`. The seed has schema but zero rows, so it cannot answer any of the questions Phase 0 exists to answer.
-2. **The photo files.** `AnhDaiDien` stores a *relative path*, not a blob (§2.4). Copy the whole install directory tree, or every photo silently breaks on import.
+2. **The photo files.** The `AnhDaiDien` writer intends to store a *relative path*, not a blob (§2.4), but the live text values must be audited rather than trusted. Copy the whole install directory tree, or every photo silently breaks on import.
 3. **`CauHinh` contents as configured** — which of the 33 `CF_*` keys that parish actually sets, including `TEMPLATE_FOLDER` and `REPORT_LANGUAGE`.
 4. **The `Template/` folder as deployed**, in case it was customized on site.
 
@@ -182,7 +182,7 @@ These are the facts that will break a naive importer.
 
 **Partial dates.** Dates are stored and manipulated as day/month/year string parts, not `DateTime` — see `GetDateFromString`, `GetDatePart`, `SplitDatePart`, `GetIntOfDateFrom`/`GetIntOfDateTo` in `CMemory.cs`. A sacrament may be known only to the year. Precision is information and must survive.
 
-**Photos are file paths, not blobs.** `AnhDaiDien` is `Text(255)` on both `GiaoDan` and `GiaDinh` (added by `UpdateProcess.cs:789,793`), resolved against the install directory at `frmGiaoDan.cs:1119` and `frmGiaDinh.cs:1573`. Extracting the `.mdb` alone breaks every photo. The importer must collect the referenced files from the install directory.
+**Photos are file paths, not blobs.** `AnhDaiDien` is `Text(255)` on both `GiaoDan` and `GiaDinh` (added by `UpdateProcess.cs:789,793`). `GxPictureField` copies a selected BMP/JPG/GIF/PNG to `Images\` under `Memory.AppPath` and stores that relative name; the person and household forms later concatenate the stored text directly onto the executable directory. Reset/change does not delete the old file, and the legacy ZIP backup selects only `giaoxu.mdb` non-recursively. Extracting the `.mdb` or relying on that backup can therefore lose every photo. The importer must audit the live references and the complete install tree rather than assume every value is a safe canonical relative path.
 
 ### 2.5 Reports
 
@@ -1376,7 +1376,7 @@ non_null =
   ambiguous + invalid_calendar + invalid_format + encoding_blocked
 ```
 
-For every parseable value, private output records only its opaque HMAC row reference, raw digest, parsed components, separator class, precision class, legacy-helper compatibility flags, normalized digest, and reviewer disposition. Sanitized output contains field-level counts only. Actual invalid/ambiguous strings are shown one at a time in the restricted review view; the review packet and git contain only invented examples. This tightens DBI-004's backlog evidence: “examples” means synthetic fixtures plus opaque references to restricted real rows, never copied parish data.
+For every non-null value, private output records only its opaque HMAC row reference, raw digest, result class, separator class, legacy-helper compatibility flags, and reviewer disposition; parsed components, precision, and normalized digest are present only when parsing succeeds. Sanitized output contains field-level counts only. Actual invalid/ambiguous strings are shown one at a time in the restricted review view; the review packet and git contain only invented examples. This tightens DBI-004's backlog evidence: “examples” means synthetic fixtures plus opaque references to restricted real rows, never copied parish data.
 
 Range and chronology rules operate on intervals without inventing precision:
 
@@ -1403,6 +1403,79 @@ The synthetic corpus covers:
 Acceptance requires all live schema date fields to be classified, all arithmetic to reconcile, both adapters to agree, every `ambiguous`, `invalid_calendar`, `invalid_format`, and `encoding_blocked` row to have an opaque finding and disposition, and zero unresolved invalid/ambiguous values in people, households, sacraments, marriages, transfers, clergy, associations, vocations, or report inputs. The domain expert separately approves future-date, age-range, and chronology policies.
 
 **DBI-004 status (2026-07-29): profiler contract complete; task remains open.** Static evidence fixes the accepted component order and documents the legacy helper divergence. Actual formats, precision counts, invalid values, and chronology findings remain unknown until DBI-002 and DBI-003 run against the restricted parish copy.
+
+### 9.4 Photo-path and file audit contract (DBI-005 preparation)
+
+The seed identifies exactly two photo-reference fields: `GiaoDan.AnhDaiDien` and `GiaDinh.AnhDaiDien`, both `VARCHAR(255)`. DBI-001 must confirm the live fields and any additional photo/image references. The audit input is the read-only `.mdb` plus a read-only, checksum-recorded copy of the exact deployed install tree; an `.mdb` alone, the repository `BIN/`, or a database-only legacy backup is incomplete evidence.
+
+Run the audit in two passes without copying any image into the target application. First classify every database reference using Windows path semantics. Then inventory the install tree and match files to safe references. Do not use the host platform's default path/case behavior as a substitute for Windows behavior, and do not resolve a source value relative to the profiler's current working directory.
+
+Each non-null reference receives exactly one path class:
+
+| Class | Meaning | Collection action |
+|---|---|---|
+| `empty` | Zero-length string | No photo; retain raw reference |
+| `whitespace_only` | Only whitespace | No photo; source-cleanup finding |
+| `canonical_relative` | `Images\name.ext` safely resolves to one regular file beneath the install root, canonical under Windows rules | Continue to content audit |
+| `valid_noncanonical` | A harmless slash, `.`-segment, or case variation safely resolves to one regular file beneath the install root | Continue to content audit; normalize only after collision checks |
+| `missing` | A syntactically safe contained reference with no matching file | Record discrepancy; do not fail the whole extraction |
+| `not_regular_file` | A contained reference resolves to a directory or another non-regular object | Never open or copy; discrepancy |
+| `unsafe_escape` | `..` traversal or normalization would leave the install root | Never open or copy; security finding |
+| `rooted_or_device` | Drive-qualified, drive-relative, root-relative, UNC, extended/device, URI, or alternate-data-stream form | Never open or copy; restricted review |
+| `invalid_windows_path` | Reserved device name, invalid character/component, trailing dot/space ambiguity, empty terminal name, or Windows length failure | Never open or copy; discrepancy |
+| `case_or_unicode_collision` | More than one candidate matches after Windows case-insensitive or approved Unicode normalization | Never choose automatically; restricted review |
+| `reparse_or_link` | A symlink, junction, mount point, hard-link anomaly, or another reparse path prevents proof of containment | Never follow automatically; restricted review |
+| `unreadable_or_changed` | File cannot be opened read-only or identity/metadata changes between validation and read | Do not retry as success; discrepancy |
+
+Null remains the DBI-002 `null` category. The reference arithmetic is:
+
+```text
+non_null_reference_rows =
+  empty + whitespace_only + canonical_relative + valid_noncanonical +
+  missing + not_regular_file + unsafe_escape + rooted_or_device +
+  invalid_windows_path + case_or_unicode_collision + reparse_or_link +
+  unreadable_or_changed
+```
+
+For a candidate relative path, lexically normalize separators and `.`/`..` components using Windows rules, reject rooted/device/alternate-stream forms, and prove that the resulting path is beneath the canonical install root. Walk each component without following links outside that root. Open the final regular file read-only, then re-check file identity, size, and modification metadata to detect replacement during the read. This is a migration audit, not a general filesystem crawler: it never opens a path that did not originate from an approved root and a contained database reference.
+
+Every safely opened file receives one content status:
+
+| Status | Meaning |
+|---|---|
+| `valid_image` | Decoder and magic bytes agree on an approved BMP, JPEG, GIF, or PNG; dimensions and size are within approved limits |
+| `extension_mismatch` | Contents are a supported image but suffix disagrees |
+| `unsupported_type` | Magic bytes identify another type or no approved type |
+| `zero_length` | File is empty |
+| `decode_failed` | Supported signature but strict decode fails or data is truncated |
+| `resource_limit` | Byte size, dimensions, frame count, decompressed pixels, or decode time exceeds a configured limit |
+
+Record byte size, media type, width, height, frame count, orientation, private SHA-256, and metadata-presence flags. Decode in a resource-constrained worker to contain malformed images and decompression bombs. The configured byte/pixel/frame limits and the treatment of animated GIFs require product approval before collection. Generated browser variants honor orientation and contain no EXIF GPS/device metadata; retention of the untouched original is a separate restricted-record policy decision.
+
+Inventory all regular files under the deployed `Images` directory without publishing their names. Reconcile them as referenced once, referenced by multiple rows, unreferenced, unsupported/non-image, or inaccessible. Shared content is not automatically an error: retain every row association and deduplicate target bytes only after product approval. Detect:
+
+- multiple raw references to one Windows path;
+- distinct paths with identical private content digest;
+- case-only, Unicode-normalization, 8.3 short-name, reserved-name, and trailing-dot/space collisions;
+- orphan files left by reset/change behavior;
+- an `AnhDaiDien` reference to a directory, install binary, template, database, or file outside `Images`;
+- hard links/reparse points and a file that changes during hashing;
+- filename/extension disagreement, zero-byte/truncated files, extreme dimensions, animation, and embedded metadata.
+
+Produce `photos.private.json`, `photos.sanitized.json`, and `photo-summary.md` under the same restricted work boundary as DBI-002. Private output contains opaque HMAC row/path references, raw-reference digests, private content hashes, safe relative manifest entries, statuses, and dispositions. Sanitized output contains counts by table/path class/content status and aggregate byte/dimension bands only. It excludes filenames, directory names, raw paths, record ids, content hashes, image bytes, thumbnails, metadata values, and low-cardinality labels. No production image is displayed, screenshotted, sent to an AI/tool consultation, copied to a test fixture, or committed.
+
+Synthetic verification creates an isolated fake Windows-shaped tree and invented images covering:
+
+- canonical person/household references, null/empty/whitespace, duplicate row references, duplicate bytes, and unreferenced files;
+- forward slashes, repeated separators, `.`/`..`, case variation, composed/decomposed names, spaces, multiple dots, no suffix, and maximum-length components;
+- drive absolute/relative, root-relative, UNC, extended/device, URI, alternate stream, reserved device, trailing dot/space, and traversal forms;
+- a directory target, missing target, permission denial, link/junction escape, hard link, and file replacement during read;
+- valid BMP/JPEG/GIF/PNG, suffix/magic mismatch, unsupported text/executable, zero-byte, truncated, oversized, excessive-dimension, multi-frame, orientation, and synthetic EXIF metadata;
+- Windows case/collision emulation on a case-sensitive host, deterministic manifests, no-log/no-summary leaks, and an interrupted scan that publishes no success marker.
+
+Acceptance requires all live reference rows and install-tree files to reconcile; private and sanitized arithmetic to agree; every unsafe, collision, link, unreadable, invalid, unsupported, decode, and resource-limit finding to have an explicit disposition; the missing-file and orphan-file counts to be known; and a deterministic, contained collection manifest to be approved. Missing optional photos may resolve to a placeholder with written approval, but no unsafe or ambiguous path is ever auto-collected.
+
+**DBI-005 status (2026-07-29): audit contract complete; task remains open.** Static evidence proves the intended `Images\` write pattern and direct install-root concatenation, not the contents or safety of deployed values. Actual reference classes, files, duplicates, missing/orphan counts, formats, and metadata remain unknown until the complete restricted install package arrives.
 
 Cutover: freeze desktop writes, run `extract`/`load`/`verify`, smoke test, open the web app, keep the desktop application and final `.mdb` read-only for 90 days.
 
@@ -1463,7 +1536,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | [ ] DBI-002 | M | DBI-001 | Implement and run the aggregate profiler contract in §9.1 against the restricted parish copy | Every live field reconciles in private JSON; sanitized JSON/Markdown pass disclosure review |
 | [ ] DBI-003 | M | DBI-002 | Implement and run the per-value encoding classifier in §9.2 | Field/class counts reconcile; restricted ambiguous set is dispositioned; critical fields have zero unresolved findings |
 | [ ] DBI-004 | M | DBI-002, DBI-003 | Implement and run the partial-date profiler contract in §9.3 | All live date fields and counts reconcile; invalid/ambiguous rows have opaque references and reviewed dispositions |
-| [ ] DBI-005 | S | DBI-002 | Audit `AnhDaiDien` paths against the install directory | Missing-file count known before import |
+| [ ] DBI-005 | S | DBI-001, DBI-002 | Implement and run the photo-path/file audit contract in §9.4 | All live references/files reconcile; missing/orphan counts known; unsafe and ambiguous findings dispositioned |
 | [x] BUG-001 | M | LEG-001 | Translate all 116 `VersionConfig.xml` changelog entries into an English/Vietnamese rule register at `docs/architecture/recorded-rules.md`, one row each: version, original text, rule implied, module, status | `CHG-001`–`CHG-116` reconcile to all 116 XML bullets; every row is classified rule / cosmetic-unspecified / obsolete implementation and behavioral rows remain pending BUG-003 |
 | [x] BUG-002 | M | BUG-001 | Mine 99 git commits for fixes not in the changelog; merge into the register | All commits through legacy release `360581d` have one ledger row; 26 history-only rule candidates were added and every other commit maps to recorded rules/aggregates or an explicit non-behavioral classification |
 | [ ] BUG-003 | M | BUG-001 | Domain expert reviews the register; mark each rule still-required / changed / obsolete | No rule enters implementation unreviewed |
