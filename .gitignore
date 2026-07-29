@@ -1,7 +1,6 @@
 # Environment files and local secrets
 .env
 .env.*
-!.env.example
 *.key
 *.pem
 *.p12
@@ -28,6 +27,8 @@
 /artifacts/
 /.tmp/
 /tmp/
+/.worktrees/
+/.superpowers/
 *.bak
 *.log
 *.tmp
