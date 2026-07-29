@@ -1,0 +1,59 @@
+# Environment files and local secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Parish databases and restricted migration material
+*.mdb
+*.accdb
+*.ldb
+*.laccdb
+/.restricted/
+/restricted-data/
+/parish-data/
+/legacy-install/
+/migration-work/
+/photos/
+/parish-photos/
+/legacy-photos/
+
+# Generated and temporary output
+/.generated/
+/generated/
+/artifacts/
+/.tmp/
+/tmp/
+*.bak
+*.log
+*.tmp
+
+# JavaScript and Angular tooling
+node_modules/
+.pnpm-store/
+.angular/
+.nx/
+coverage/
+dist/
+playwright-report/
+test-results/
+
+# Visual Studio and .NET project output
+.vs/
+Source/**/bin/
+Source/**/obj/
+Source/**/[Dd]ebug/
+Source/**/[Rr]elease/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.coverage
+*.coveragexml
+
+# Operating-system metadata
+.DS_Store
+Thumbs.db
