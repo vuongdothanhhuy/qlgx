@@ -732,7 +732,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | [ ] LEG-003 | M | LEG-001 | Catalog sacrament forms, batch behavior, validation, SQL | Every observed sacrament path has an example |
 | [ ] LEG-004 | M | LEG-001 | Catalog marriage, bann, transfer, archive, and the saved Access queries | Each saved query has a named purpose and fixture |
 | [ ] LEG-005 | M | LEG-001 | Catalog catechism, association, vocation, clergy, hierarchy | Every module has an acceptance example |
-| [ ] LEG-006 | S | LEG-001 | Catalog imports, merge, backup, statistics (`frmThongKeChung`) | Each command marked preserve / replace / retire |
+| [x] LEG-006 | S | LEG-001 | Catalog imports, merge, backup, statistics (`frmThongKeChung`) in `docs/architecture/legacy-operations-inventory.md` | 33 import/merge/backup/statistics command rows reconcile to compiled entry points and each has an explicit preserve / replace / retire decision |
 | [ ] DBI-001 | S | SEC-001 | Schema-only Access inventory into restricted work storage | Table, key, index, and type list reconciles with §2.3 |
 | [ ] DBI-002 | M | DBI-001 | Profile null/blank/distinct/range per field from a real parish copy | Machine-readable profile plus sanitized summary |
 | [ ] DBI-003 | M | DBI-002 | **Classify text-encoding per text field** (VNI / TCVN3-UTH / Unicode / ambiguous) | Counts and examples per class; ambiguous set enumerated |
