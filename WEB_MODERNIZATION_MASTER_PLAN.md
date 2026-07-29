@@ -1206,6 +1206,78 @@ Rules:
 
 `verify` reconciles: source rows = loaded + merged + skipped-with-reason + unresolved. Go-live requires `unresolved = 0` for people, households, sacraments, and marriages. Other anomalies need a written decision.
 
+### 9.1 Aggregate field profiler contract (DBI-002 preparation)
+
+DBI-002 runs only after DBI-001 freezes the live schema manifest. It reads every canonical table but emits aggregates, opaque references, and keyed value digests rather than field values. It must not print a row, sample value, Access credential, local install path, person/household identifier, contact value, note, or filename to stdout, logs, the sanitized summary, or git.
+
+Produce three outputs in the restricted, gitignored work directory:
+
+| Output | Contents | Retention/access |
+|---|---|---|
+| `profile.private.json` | Full aggregate profile, candidate-key/relation anomalies identified by opaque HMAC references, and keyed digests for equality/distinctness | Migration operators only; encrypted storage; deleted on the intake schedule |
+| `profile.sanitized.json` | Same schema and aggregate counts with all record references, value digests, paths, and low-cardinality labels removed | Reviewable by engineering/domain team; may be copied only after the security owner runs the disclosure check |
+| `profile-summary.md` | Human-readable counts, risks, and decisions with no row/value examples | Review packet; generated from the sanitized JSON, never hand-copied from private output |
+
+The HMAC key is generated per intake package, stored separately from outputs, never logged or committed, and destroyed with the restricted copy. HMACs provide stable equality references within one intake run; they are not anonymization and never make private output publishable.
+
+The machine-readable envelope is versioned and deterministic:
+
+```json
+{
+  "profile_schema_version": 1,
+  "source": {
+    "database_sha256": "<restricted>",
+    "jet_version": "JET4",
+    "schema_manifest_sha256": "<digest>",
+    "extractor_version": "<pinned>",
+    "started_at": "<UTC>",
+    "completed_at": "<UTC>"
+  },
+  "tables": [],
+  "candidate_relationships": [],
+  "findings": [],
+  "reconciliation": {
+    "schema_tables": 0,
+    "profiled_tables": 0,
+    "failed_tables": 0
+  }
+}
+```
+
+For each table record row count; primary-key null and duplicate counts; candidate-key duplicate counts; and a field entry for every schema field. Every field entry records Access type/length/required/autonumber metadata, total/null/non-null/zero-length/whitespace-only counts, distinct digest count, minimum/maximum character and byte length, and truncation-risk counts for its proposed target limit. Numeric fields additionally record negative/zero/positive counts and minimum/maximum; booleans record true/false/null counts; timestamps record null, minimum, and maximum after parser validation. Do not emit most-common values. DBI-003 and DBI-004 add encoding/date classifications without mutating the DBI-002 base counts.
+
+Profile these candidate relationships as orphan count, parent count, child count, distinct parent-reference count, and maximum children per parent. A result is evidence for review, not permission to add a foreign key automatically:
+
+| Parent | Child reference(s) |
+|---|---|
+| `GiaoPhan.MaGiaoPhan` | `GiaoHat.MaGiaoPhan` |
+| `GiaoHat.MaGiaoHat` | `GiaoXu.MaGiaoHat` |
+| `GiaoHo.MaGiaoHo` | `GiaoDan.MaGiaoHo`, `GiaDinh.MaGiaoHo`; separately test `GiaoHo.MaGiaoHoCha` as a self-reference |
+| `GiaoDan.MaGiaoDan` | `ThanhVienGiaDinh.MaGiaoDan`, `BiTichChiTiet.MaGiaoDan`, `GiaoDanHonPhoi.MaGiaoDan`, `RaoHonPhoi.MaGiaoDan1/2`, `ChuyenXu.MaGiaoDan`, `ChiTietHoiDoan.MaGiaoDan`, `TanHien.MaGiaoDan`, `ChiTietLopGiaoLy.MaGiaoDan`, `GiaoLyVien.MaGiaoDan` |
+| `GiaDinh.MaGiaDinh` | `ThanhVienGiaDinh.MaGiaDinh` |
+| `VaiTro.ID` | `ThanhVienGiaDinh.VaiTro` |
+| `DotBiTich.MaDotBiTich` | `BiTichChiTiet.MaDotBiTich` |
+| `HonPhoi.MaHonPhoi` | `GiaoDanHonPhoi.MaHonPhoi` |
+| `HoiDoan.MaHoiDoan` | `ChiTietHoiDoan.MaHoiDoan` |
+| `KhoiGiaoLy.MaKhoi` | `LopGiaoLy.MaKhoi` |
+| `LopGiaoLy.MaLop` | `ChiTietLopGiaoLy.MaLop`, `GiaoLyVien.MaLop` |
+| `TenLoaiTaiKhoan.ID` | `TaiKhoan.LoaiTaiKhoan` |
+
+Also compute cross-table invariants as counts only: people in multiple active spouse roles; household memberships with unsupported relationship ids; multiple household heads; marriages without exactly two participant links; sacrament details without batch/person; current association duplicates; more than one current vocation row per person; duplicate catechism student/teacher links; disabled accounts with unexpected type ids; and table rows absent from the final DBI-001 classification.
+
+The profiler fails closed when a schema field is unprofiled, a table read fails, aggregate arithmetic does not reconcile, a query would export raw values, a log formatter receives a row object, or private output is directed outside the restricted work directory. A successful run satisfies, for every field, `rows = null + non_null`; for text, `non_null = empty + whitespace_only + non_blank`; and for booleans, `rows = null + true + false`.
+
+Synthetic design-time verification uses only invented schemas and values:
+
+- empty table; one row; duplicate/null primary key; composite-key collision;
+- null, empty, spaces, tabs/newlines, zero-width characters, maximum-length and over-target text;
+- integer minimum/zero/maximum, negative ids, unexpected boolean encodings, invalid timestamp;
+- valid parent/child, null optional reference, orphan, self-cycle, and duplicate link;
+- a canary name/contact/note/path value that makes the test fail if it appears in logs or sanitized output;
+- interrupted table scan and output-write failure, proving no success marker or partial sanitized summary is published.
+
+**DBI-002 status (2026-07-29): profiler contract complete; task remains open.** Implementation belongs to the importer phase and execution requires the restricted parish copy. Close only when every live field is present in the versioned private profile, all arithmetic reconciles, the sanitized outputs pass disclosure review, and every finding has an owner and disposition.
+
 Cutover: freeze desktop writes, run `extract`/`load`/`verify`, smoke test, open the web app, keep the desktop application and final `.mdb` read-only for 90 days.
 
 ## 10. Roadmap
@@ -1262,7 +1334,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | [ ] LEG-005 | M | LEG-001 | Static catalog in §2.10: 13 compiled surfaces, 25 validation/side-effect rules, and 8 data/query-intent families | Repository review packet complete; blocked on Windows runtime observation, one domain-expert-approved acceptance example per module, and resolution of the destructive/ambiguous behaviors listed in §2.10 |
 | [x] LEG-006 | S | LEG-001 | Catalog imports, merge, backup, statistics (`frmThongKeChung`) in `docs/architecture/legacy-operations-inventory.md` | 33 import/merge/backup/statistics command rows reconcile to compiled entry points and each has an explicit preserve / replace / retire decision |
 | [ ] DBI-001 | S | SEC-001 | Finalize the §2.11 embedded-seed schema hypothesis against a restricted pilot copy | Live table/query, field, key, index, relationship, and type inventory reconciles with §2.3 without reading rows |
-| [ ] DBI-002 | M | DBI-001 | Profile null/blank/distinct/range per field from a real parish copy | Machine-readable profile plus sanitized summary |
+| [ ] DBI-002 | M | DBI-001 | Implement and run the aggregate profiler contract in §9.1 against the restricted parish copy | Every live field reconciles in private JSON; sanitized JSON/Markdown pass disclosure review |
 | [ ] DBI-003 | M | DBI-002 | **Classify text-encoding per text field** (VNI / TCVN3-UTH / Unicode / ambiguous) | Counts and examples per class; ambiguous set enumerated |
 | [ ] DBI-004 | M | DBI-002 | Classify every date-like field and observed precision | Invalid and ambiguous values counted with examples |
 | [ ] DBI-005 | S | DBI-002 | Audit `AnhDaiDien` paths against the install directory | Missing-file count known before import |
