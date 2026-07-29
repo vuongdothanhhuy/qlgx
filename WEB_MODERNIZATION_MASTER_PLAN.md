@@ -232,6 +232,84 @@ Parish staff have used these for years. **They are preserved verbatim in the web
 - `GxCheckVersion.cs` downloads `version.txt` and reflects into `AutoUpdate.exe`. Replaced by ordinary deployment.
 - `frmGopY` feedback submission. Do not port.
 
+### 2.9 Provisional marriage, bann, transfer, and archive catalog
+
+**Status (2026-07-29): repository review packet complete; LEG-004 remains open.** This catalog records behavior visible in compiled source and the query-recreation code. It does not identify which saved Access queries exist in the live parish file, prove that the deployed definitions match the latest source, or supply approved expected-result fixtures. Those acceptance conditions require the restricted live `.mdb` and domain-expert review.
+
+#### Compiled surfaces and responsibilities
+
+| Surface | Trigger and inputs | Validation / state mutation | Output or report | Source evidence | Question for walkthrough |
+|---|---|---|---|---|---|
+| Person marriage editor | Add or edit a marriage from a selected person's record; spouse, couple name, marriage code/sequence, date, place, celebrant, witnesses, form, notes | Rebuilds the two `GiaoDanHonPhoi` participant rows, preserves each participant's sequence when editing, marks both people `DaCoGiaDinh`, and may open household creation | Refreshes the selected person's marriage list | `Source/GXControl/GxHonPhoi.cs`: `checkInput`, `UpdateHonPhoi`, `checkGiaDinh`, `HonPhoiExists` | Is household creation normally accepted, declined, or deferred, and what is the recovery flow after declining? |
+| Standalone marriage dialog | Add or edit a marriage from a list | Persists `HonPhoi` plus participant links after the same core identity, sequence, and date checks | Returns the saved row to the caller | `Source/GXControl/frmHonPhoi.cs`: `checkInput`, `UpdateData`, `GetHonPhoi` | Which entry point do staff actually use, and must both editors remain behaviorally identical? |
+| Household marriage panel | Edit marriage details while maintaining a household | Finds the marriage from the husband/wife pair and updates the marriage plus participant links | Updated household-marriage state | `Source/GXControl/GxHonPhoiGiaDinh.cs`: `GetHonPhoiTheoVoChong`, `UpdateHonPhoi`, `checkInput` | Can a household exist without a marriage, and which fields may differ from the person editor? |
+| Marriage list and certificate | Open, add, edit, or print from a person's marriage history | Filters out the current person when resolving the spouse; selects one marriage for edit/print | Marriage certificate through `ExcelReport.ReportHonPhoi` | `Source/GXControl/GxHonPhoiList.cs`: `LoadData`, `EditRow`, `AddRow`, `XuatChungNhanHonPhoi` | Which certificate variant is used by the pilot parish, and when is reprinting allowed? |
+| Marriage-form reference data | Maintain `CachThucHonPhoi` values | Adds, edits, and deletes form-of-marriage lookup entries | Lookup values consumed by marriage editors and reports | `Source/GXControl/GxCachThucHonPhoi.cs` | Are historical values immutable once referenced, and may a value be retired instead of deleted? |
+| Bann editor and investigation/result letter | Create or edit a bann; choose two people; enter the couple label, three bann dates, current/previous parish and diocese values, receiving parish and priest | Requires both people and all three exact dates; print mode additionally requires receiving parish and priest; selection constrains the other person to the opposite recorded sex | Saves `RaoHonPhoi`; exports investigation or result through `ExcelReport.ReportRaoHP` | `Source/GXControl/frmRaoHonPhoi.cs`: `gxCommand1_OnOK`, `isValidDate`, `UpdateData`, `GetDataRaoHonPhoi` | Are all three bann dates mandatory in every real case, and how are dispensations or skipped banns represented? |
+| Bann list and weekly print | Show upcoming or all banns; add, edit, delete, print investigation/result, or print the week's public list | Upcoming filter compares the third bann date; selected print date matches a bann occurring from zero through six days earlier; list printing builds and later drops `RaoHonPhoiTMP` | Individual letters and batch bann list | `Source/GXControl/GxRaoHonPhoiList.cs`: `LoadData`, `EditRow`, `DeleteRow`, `Print`, `getLanRao`, `isPrinted`; `Source/ChuongTrinh/frmRaoHonPhoiList.cs` | Does “within the previous seven days” reflect parish practice, and what prevents the same bann round from being printed twice? |
+| Person transfer history | Open transfer history for one person | Filters `SELECT_CHUYENXU_LIST` by `MaGiaoDan`; displays transfer type, date, destination/origin, and notes | History used by person screens and bann parish-prefill logic | `Source/GXControl/frmChuyenXu.cs`; `Source/GXControl/GxChuyenXuList.cs`: `LoadData`, `getLoaiChuyenText`; `Source/GXControl/RpGioiThieuChuyenXu.cs` | Which transfer types are active, and does a correction append history or edit the existing row? |
+| Bulk person parish-section move | Choose source and destination parish sections, select people, start move | Rejects missing/same sections, empty result, or zero selections; changes `GiaoDan.MaGiaoHo` only for selected rows | Success message and refreshed person list | `Source/ChuongTrinh/frmChuyenHoGiaoDan.cs`: `btnBatDauChuyen_Click` | Should independent household members be allowed to move without their household, and what audit reason is required? |
+| Bulk household parish-section move | Choose source and destination parish sections, select households, confirm cascade | Warns that all household members move; delegates to `UpdateProcess` with `ProcessOptions.ChuyenHoGiaDinh` | Progress/error state and refreshed household list | `Source/ChuongTrinh/frmChuyenHoGiaDinh.cs`: `btnBatDauChuyen_Click`, `frmUpdate_OnFinished`; `Source/ChuongTrinh/UpdateProcess.cs`: `ChuyenHoGiaDinh` path | Does the cascade include archived/deceased/transferred members, and can staff exclude an individual? |
+| Archived people list | Open archived people, filter, view/edit, print sacrament certificate, or produce marriage-introduction output | Uses the normal people projection with archive-specific conditions; mutations still route through the shared person editor | List, sacrament certificate, and marriage-introduction report | `Source/ChuongTrinh/frmGiaoDanLuuTruList.cs`: `LoadData`, `EditRow`, `btnChungNhanBiTich_Click`, `btnGioiThieuHonPhoi_Click` | What action archives/restores a person, and which archived statuses remain eligible for documents? |
+| Archived household list | Open archived households, filter, view/edit, print marriage certificate or family register | Uses the normal household projection with archive-specific conditions; mutations route through the shared household editor | List, marriage certificate, and family-register report | `Source/ChuongTrinh/frmGiaDinhLuuTruList.cs`: `LoadData`, `EditRow`, `btnChungNhanHonPhoi_Click`, `btnSoGiaDinh_Click` | Can an archived household be restored, merged, or reused when a surviving spouse remarries? |
+
+The similarly named `Source/ChuongTrinh/frmRaoHonPhoi.cs` is not compiled by `GiaoXu.csproj`; the compiled dialog is `Source/GXControl/frmRaoHonPhoi.cs`. Treat the uncompiled copy as historical evidence only unless the Windows build proves otherwise.
+
+#### Validation and side-effect rules to characterize
+
+| Rule | Static evidence | Target characterization |
+|---|---|---|
+| Marriage code and per-person sequence are numeric | `GxHonPhoi.checkInput`; `frmHonPhoi.checkInput` | Invalid text blocks save and focuses the offending field |
+| Both participants and the couple name are required | Same methods | Missing participant or name blocks save without a partial write |
+| Husband and wife selection is constrained by recorded sex | `GxHonPhoi.txtNguoiChong_OnSelecting`, `txtNguoiVo_OnSelecting`; bann selection handlers | Same-sex selection behavior is explicitly approved or replaced; unknown/blank sex is tested |
+| A person with an active vocation cannot marry | `GxHonPhoi.checkInput` queries `SELECT_TANHIEN_HIENTAI` | Active vocation blocks; returned/former vocation behavior is approved |
+| Duplicate marriage for the same pair is blocked on add | `GxHonPhoi.HonPhoiExists`; `checkInput` | Reversed participant order is also tested |
+| Marriage date must be after each known birth date | `GxHonPhoi.checkInput` | Equality and earlier dates block; partial/unknown birth dates preserve precision and do not invent a day |
+| Under-age marriage warns but can continue | `GxHonPhoi.checkInput`; thresholds from configuration/constants | Both “continue” and “cancel” paths are captured using approved thresholds |
+| Saving recreates exactly two participant links | `GxHonPhoi.UpdateHonPhoi`; `frmHonPhoi.UpdateData` | Update cannot leave zero, one, or more than two active participant links |
+| Saving marks both participants as having a family | `GxHonPhoi.UpdateHonPhoi` updates `DaCoGiaDinh` | Reconciliation behavior after delete, annulment, death, or archive is approved |
+| A married pair without husband/wife household roles prompts household creation | `GxHonPhoi.checkGiaDinh` | Accept, decline, cancel, and pre-existing household paths are captured |
+| Marriage and bann deletion require confirmation | `GxHonPhoi.gxAddEdit1_DeleteClick`; `GxRaoHonPhoiList.DeleteRow` | Cancel leaves all canonical/link rows unchanged; confirm defines cascade behavior |
+| Bann printing requires receiving priest and parish | `frmRaoHonPhoi.gxCommand1_OnOK` when `UsePrint` | Save-without-print and print-required fields remain distinct |
+| Every entered bann date must be an exact valid day/month/year | `frmRaoHonPhoi.isValidDate` | Leap day, missing part, invalid date, and ordered/unordered rounds are reviewed |
+| Selecting bann participants pre-fills current/previous parish data | `frmRaoHonPhoi.txtNguoi1_OnSelected`, `txtNguoi2_OnSelected` | Multiple transfer-history rows have a deterministic approved precedence |
+| Batch bann printing maps the selected date to round 1, 2, or 3 within a seven-day window | `GxRaoHonPhoiList.getLanRao`, `isPrinted` | Boundary days 0, 6, and 7 and overlapping rounds have approved results |
+| Bulk person move updates only selected people | `frmChuyenHoGiaoDan.btnBatDauChuyen_Click` | Selected/unselected rows and same-section rejection are covered |
+| Bulk household move cascades section to members | `frmChuyenHoGiaDinh.btnBatDauChuyen_Click`; `UpdateProcess` | Member-status inclusion, transactionality, interruption, and rollback are covered |
+
+#### SQL-intent and saved-query hypotheses
+
+These names are repository evidence, not an authoritative deployed-query inventory.
+
+| Intent family | Known SQL/query symbols | Purpose inferred from callers | Required fixture shape |
+|---|---|---|---|
+| Marriage identity and participants | `SELECT_HONPHOI_THEO_ID`, `SELECT_HONPHOI_THEO_MAGIAODAN`, `SELECT_HONPHOI_THEO_MAGIAODAN2`, `SELECT_VOCHONG_THEO_HONPHOI` | Load one marriage, find marriages for a person or pair, and resolve participants | No marriage; one pair; reversed lookup; multiple historical marriages |
+| Marriage list projection | `SELECT_HONPHOI_LIST`, source-created `SELECT_HONPHOI_LIST_1` | Pivot participant sex into husband/wife columns, join names and parish-section context, feed lists/reports/statistics | Internal/external spouse, missing section, unknown sex, Unicode/VNI name classes |
+| Marriage eligibility/status | `SELECT_TANHIEN_HIENTAI`, `SELECT_HONPHOI_ACTIVE`, `SELECT_HONPHOI_CHECK_LIST` | Block active vocation and inspect current/history status | Active, returned, archived, deceased, and ambiguous history |
+| Household relationship reconciliation | `SELECT_GIADINH_LIST_CO_HONPHOI`, `SELECT_GIAODAN_HONPHOI_WITH_ID`, `SELECT_GIAODAN_THEO_HONPHOI`, `UPDATE_CHUACOGIADINH_THEOHONPHOI`, `UPDATE_DACOGIADINH_THEOHONPHOI` | Connect marriage participants to household roles and maintain family flags | Couple with no household, one shared household, separate households, archived household |
+| Bann CRUD and list | `SELECT_RAOHONPHOI_LIST`, `DELETE_RAOHONPHOI` | Load/edit/delete bann couples and dates | Three rounds, invalid/missing round, former parish data, delete/cancel |
+| Bann print projection | `SELECT_REPORT_RAOHONPHOI_LIST` plus temporary `RaoHonPhoiTMP` | Join the chosen week's selected people to report fields | Each round, date-window boundaries, two people per couple, no eligible bann |
+| Transfer history | `SELECT_CHUYENXU_LIST`, `SELECT_CHUYENXU_THEOID`, `SELECT_GIAODAN_THEO_ID` with `ChuyenXu.LoaiChuyen` | Show transfer history and prefill previous-parish data | Transfer in/out, multiple events, correction, missing place/date |
+| Household/person archive projections | `SELECT_GIADINH_LIST`, `SELECT_GIAODAN_LIST_CO_GIAOHO` plus form-specific conditions | Reuse canonical list projections for archived records and document actions | Each archive reason/status, restore candidate, deceased/transferred record |
+
+The application actively creates or replaces at least these Access procedures:
+
+- `SELECT_HONPHOI_LIST_1`: a crosstab over `HonPhoi`, `GiaoDanHonPhoi`, and participant sex, used as the inner marriage projection.
+- `SELECT_HONPHOI_LIST`: the outer projection that adds participant names and parish-section information. Several historical definitions exist in `UpdateProcess.cs`; `CMemory.CreateSELECT_HONPHOI_VIEW()` repairs it when expected columns are absent.
+- `SELECT_GIADINH_LIST`: the household list projection. `UpdateProcess.cs` recreates it repeatedly across database-version upgrades, so the final definition in a deployed file is version-sensitive.
+
+The source also calls many other `SELECT_*` names without recreating them. Therefore, constants and source literals cannot prove whether a name is a table, saved query, parameter query, obsolete query, or a definition customized in the deployed database.
+
+#### LEG-004 closure procedure after the real `.mdb` arrives
+
+1. Work only inside the restricted data area defined by SEC-001/002; record authorization, provenance, checksum, database version, and tool version without recording the Access password.
+2. Extract schema metadata only: every non-system `QueryDef` name, kind, parameter list, referenced object names, and normalized SQL. Keep raw SQL under restricted storage until a reviewer confirms it contains no production literals or identifiers.
+3. Reconcile the deployed list against every query symbol above and against `CMemory.CreateSELECT_HONPHOI_VIEW()` / `UpdateProcess.cs`. Classify each as deployed-and-used, deployed-unreferenced, source-created-missing, source-only, or unresolved.
+4. Assign one plain-language purpose and one owning workflow to every deployed query. Any query with no known caller remains explicitly “purpose unresolved”; do not guess.
+5. Derive fixture **classes** from observed schema and aggregate shapes, then author synthetic people, households, marriages, banns, and transfers. A second reviewer must confirm the fixtures contain no copied names, dates, addresses, notes, or identifiers.
+6. Run each saved query against the synthetic fixture database and capture field names, ordering, cardinality, null behavior, and expected rows. Reference those fixture/result ids from this section.
+7. Have the domain expert walk the twelve surfaces and seventeen rules above, resolve each question, and approve which behavior is still required. Only then mark LEG-004 complete and use its outputs for FLO-002 and MAR-001.
+
 ## 3. Scope
 
 ### 3.1 First production scope
@@ -730,7 +808,7 @@ Documentation and approval cards replace the red/green loop with peer review and
 | [x] LEG-001 | S | — | `docs/architecture/legacy-baseline.md`: projects, entry points, dependencies | Seven solution projects reconciled to entry points, direct dependencies, external dependencies, and explicit preserve / replace / retire classifications |
 | [ ] LEG-002 | M | LEG-001 | Static catalog in `docs/architecture/people-household-inventory.md`: 14 surface groups, 17 validation/side-effect groups, and 8 SQL-intent families | Repository review packet complete; blocked on domain-expert review and representative examples |
 | [ ] LEG-003 | M | LEG-001 | Static catalog in `docs/architecture/sacrament-inventory.md`: 7 surface groups, batch-generation algorithm, 11 validation groups, and 6 SQL-intent families | Repository review packet complete; blocked on an approved example for every supported sacrament path and edge case |
-| [ ] LEG-004 | M | LEG-001 | Catalog marriage, bann, transfer, archive, and the saved Access queries | Each saved query has a named purpose and fixture |
+| [ ] LEG-004 | M | LEG-001 | Static catalog in §2.9: 12 compiled surfaces, 17 validation/side-effect rules, 8 SQL-intent families, and 3 source-created saved-query hypotheses | Repository review packet complete; blocked on schema-only extraction from the real `.mdb`, one named purpose and synthetic fixture per deployed saved query, and domain-expert approval |
 | [ ] LEG-005 | M | LEG-001 | Catalog catechism, association, vocation, clergy, hierarchy | Every module has an acceptance example |
 | [x] LEG-006 | S | LEG-001 | Catalog imports, merge, backup, statistics (`frmThongKeChung`) in `docs/architecture/legacy-operations-inventory.md` | 33 import/merge/backup/statistics command rows reconcile to compiled entry points and each has an explicit preserve / replace / retire decision |
 | [ ] DBI-001 | S | SEC-001 | Schema-only Access inventory into restricted work storage | Table, key, index, and type list reconciles with §2.3 |
